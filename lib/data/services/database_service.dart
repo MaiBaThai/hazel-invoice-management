@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import '../models/customer_model.dart';
 import '../models/invoice_model.dart';
+import '../models/expense_model.dart';
 import '../models/app_settings_model.dart';
 
 class DatabaseService {
@@ -174,6 +175,25 @@ class DatabaseService {
     } catch (e) {
       debugPrint('Error deleting photo from storage: $e');
     }
+  }
+
+  // --- Expenses ---
+
+  Future<String> saveExpense(Expense expense) async {
+    final docRef = await _db.collection('expenses').add(expense.toMap());
+    return docRef.id;
+  }
+
+  Future<List<Expense>> getExpensesSince(DateTime date) async {
+    final snapshot = await _db
+        .collection('expenses')
+        .where('created_at', isGreaterThanOrEqualTo: Timestamp.fromDate(date))
+        .orderBy('created_at', descending: true)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => Expense.fromMap(doc.id, doc.data()))
+        .toList();
   }
 
   // --- Reports (For Phase 2) ---

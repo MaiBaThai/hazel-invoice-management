@@ -40,6 +40,25 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-017**: As a user, I want to delete photos from both the invoice and the gallery view.
 - [x] **STORY-018**: As a user, I want to edit customer names and phone numbers to keep records accurate.
 
+## Epic 6: Expense Management & Financial Tracking [NEW]
+*Goal: Track operating costs to calculate studio profitability.*
+
+- [x] **STORY-020**: As a user, I want to record expenses with itemized descriptions and costs.
+- [x] **STORY-021**: As a user, I want quick-add categories (Rent, Supplies, Utilities) to speed up expense entry.
+- [ ] **STORY-022**: As a user, I want to see the impact of expenses on my daily/monthly profit on the Dashboard.
+
+## Changelogs - May 3, 2026
+### v1.3.9
+- **Expense Management**: Introduced a new Expenses tab for tracking studio costs.
+- **Categorization**: Added quick-add chips for Rent, Supplies, and Utilities (Electricity, Water, Internet).
+- **Architecture**: Implemented Expense model, Provider, and Firestore integration.
+
+### v1.3.8
+- **Dashboard Drill-down**: Replaced the static daily revenue list with an expandable view showing services, discounts, and subtotals.
+- **Photo Integration**: Integrated photo thumbnails into the daily invoice detail with full-screen viewing support.
+- **Rendering Fixes**: Switched to `Wrap` layout for photos and added loading/error handling to stabilize web rendering.
+- **CORS Management**: Configured production Storage CORS to ensure cross-origin image loading works correctly.
+
 ## Changelogs - April 29, 2026
 ### v1.3.2 - v1.3.6
 - **Storage Integration**: Linked Firebase Storage with "Pay-as-you-go" plan and configured CORS via Google Cloud Shell to enable web uploads.
