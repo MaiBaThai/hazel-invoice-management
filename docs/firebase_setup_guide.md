@@ -2,21 +2,42 @@
 
 This guide provides step-by-step instructions to configure Firebase for the Nail Management System (NMS).
 
-## 1. Create a Firebase Project
-1. Go to the [Firebase Console](https://console.firebase.google.com/).
-2. Click **Add project** and name it `NMS` (or your preferred name).
-3. (Optional) Enable Google Analytics and click **Create project**.
+## 1. Project Environments
 
-## 2. Initialize Cloud Firestore
+We maintain two separate Firebase projects to isolate development/testing from production data.
+
+| Environment | Project Name | Project ID | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Production** | invoices-management | `invoices-management-c4ef0` | Live environment for end-users. |
+| **Development** | invocie-management-dev | `invocie-management` | Testing new features and changes. |
+
+## 2. Version Control (Git)
+
+The source code is hosted on GitHub.
+
+- **Repository**: `https://github.com/MaiBaThai/hazel-invoice-management`
+- **Branching Strategy**:
+    - `main`: Production-ready code. Always stable.
+    - `develop`: Main development branch. Features are merged here first.
+
+## 3. Initialize Cloud Firestore & Storage
+
+### Firestore
 1. In the Firebase Console, navigate to **Build > Firestore Database**.
 2. Click **Create database**.
-3. Select **Start in test mode** for initial development (ensure you update rules later).
-4. Choose a location nearest to your location and click **Enable**.
+3. Select a location (Production: `nam5`, Development: `nam5`).
+4. Apply security rules using the Firebase CLI (see Deployment Guide).
 
-## 3. Install FlutterFire CLI
+### Storage
+1. In the Firebase Console, navigate to **Build > Storage**.
+2. Click **Get Started**.
+3. Select a location and apply security rules via CLI.
+
+## 4. Install FlutterFire CLI
+
 The FlutterFire CLI is the recommended way to configure Firebase for all Flutter platforms.
 
-1. Install the Firebase CLI on your machine:
+1. Install the Firebase CLI:
    ```bash
    npm install -g firebase-tools
    ```
@@ -29,74 +50,39 @@ The FlutterFire CLI is the recommended way to configure Firebase for all Flutter
    dart pub global activate flutterfire_cli
    ```
 
-## 4. Configure Platforms
-Run the following command in the root of your Flutter project:
-```bash
-flutterfire configure
-```
-1. Select your project from the list.
-2. Select the platforms: `web` and `ios` (as specified in requirements).
-3. The CLI will automatically:
-   - Create a `firebase_options.dart` file in `lib/`.
-   - Register your apps in the Firebase Console.
-   - Download the necessary configuration files.
+## 5. Configure Environments (Dart Defines)
 
-## 5. Initialize Firebase in Flutter
-Update your `lib/main.dart` to initialize Firebase before running the app:
+Instead of a single `firebase_options.dart`, we use environment-specific files:
+
+1. **Development**:
+   ```bash
+   flutterfire configure --project=invocie-management --out=lib/firebase_options_dev.dart --platforms=web
+   ```
+2. **Production**:
+   ```bash
+   flutterfire configure --project=invoices-management-c4ef0 --out=lib/firebase_options_prod.dart --platforms=web
+   ```
+
+## 6. Initialize Firebase in Flutter
+
+Update `lib/main.dart` to support multiple environments:
 
 ```dart
-// lib/main.dart
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'firebase_options_dev.dart' as dev;
+import 'firebase_options_prod.dart' as prod;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Use --dart-define=ENVIRONMENT=prod to switch to production
+  const String environment = String.fromEnvironment('ENVIRONMENT', defaultValue: 'dev');
+  
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+    options: environment == 'prod' 
+        ? prod.DefaultFirebaseOptions.currentPlatform 
+        : dev.DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(/* ... your app ... */);
+  
+  runApp(const NMSApp());
 }
 ```
-
-## 6. Firestore Security Rules
-To protect your data, go to **Firestore > Rules** and apply basic rules:
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Basic rule: only authenticated users (if implemented later) or public during dev
-    match /{document=**} {
-      allow read, write: if true; // WARNING: Change this before production
-    }
-    
-    // Recommended specific rules
-    match /customers/{customerId} {
-      allow read, write: if true;
-    }
-    
-    match /invoices/{invoiceId} {
-      allow read, create: if true;
-    }
-  }
-}
-```
-
-## 7. Firebase Hosting (For PWA)
-To deploy the web version:
-1. Initialize Hosting:
-   ```bash
-   firebase init hosting
-   ```
-2. Select **Use an existing project**.
-3. Set your public directory to `build/web`.
-4. Configure as a single-page app: **Yes**.
-5. Deploy:
-   ```bash
-   flutter build web
-   firebase deploy
-   ```
-
----
-> [!TIP]
-> For iOS, ensure you open `ios/Runner.xcworkspace` in Xcode and set your **Bundle Identifier** and **Team** to match your Apple Developer account.

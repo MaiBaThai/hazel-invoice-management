@@ -5,46 +5,65 @@ This guide provides the standard procedure for building and deploying the NMS Fl
 ## 1. Prerequisites
 - **Flutter SDK**: Ensure Flutter is installed and updated.
 - **Firebase CLI**: Installed (`npm install -g firebase-tools`) and logged in (`firebase login`).
-- **GCloud SDK** (Optional): Useful for advanced storage configuration (`gcloud auth login`).
+- **FlutterFire CLI**: Activated (`dart pub global activate flutterfire_cli`).
 
-## 2. Standard Deployment Workflow
+## 2. Environment Management (Aliases)
+
+We use Firebase aliases to switch between projects easily.
+
+```bash
+# Check current project
+firebase use
+
+# Switch to development
+firebase use development
+
+# Switch to production
+firebase use production
+```
+
+## 3. Standard Deployment Workflow
 
 Always run these commands in the project root directory.
 
 ### Step A: Clean & Prepare
-Clearing previous build artifacts is mandatory to prevent stale code being served to users.
 ```bash
 flutter clean
 flutter pub get
 ```
 
 ### Step B: Build for Web
-Use the release mode with specific flags for consistent results.
+Specify the environment using `--dart-define`.
+
+**For Development:**
 ```bash
-flutter build web --release --no-tree-shake-icons --no-wasm-dry-run
+flutter build web --release --no-tree-shake-icons --dart-define=ENVIRONMENT=dev
 ```
-*Note: `--no-tree-shake-icons` prevents icon rendering issues on some browsers.*
+
+**For Production:**
+```bash
+flutter build web --release --no-tree-shake-icons --dart-define=ENVIRONMENT=prod
+```
 
 ### Step C: Deploy to Hosting
-Deploy to the main production URL and optionally a preview channel for testing.
 
-**Production Deploy:**
+**Deploy to Development:**
 ```bash
-firebase deploy --only hosting
+firebase use development
+firebase deploy --only hosting,firestore,storage
 ```
 
-**Preview Channel (Recommended for testing):**
+**Deploy to Production:**
 ```bash
-# Replace 'v136' with your current version tag
-firebase hosting:channel:deploy v136 --expires 1h
+firebase use production
+firebase deploy --only hosting,firestore,storage
 ```
 
-## 3. Storage & CORS Configuration
-If you ever create a new bucket or reset settings, the Web app requires CORS to be configured to allow uploads.
+## 4. Storage & CORS Configuration
+The Web app requires CORS to be configured on Firebase Storage to allow uploads/downloads.
 
-### Local Command (Requires GCloud Login):
-1. `gcloud auth login`
-2. Create a `cors.json` file:
+### Local Command:
+1. Create a `cors.json` file:
 ```json
 [
   {
@@ -54,17 +73,18 @@ If you ever create a new bucket or reset settings, the Web app requires CORS to 
   }
 ]
 ```
-3. Run: `gsutil cors set cors.json gs://invoices-management-c4ef0.firebasestorage.app`
+2. Run for Dev: `gsutil cors set cors.json gs://invocie-management.firebasestorage.app`
+3. Run for Prod: `gsutil cors set cors.json gs://invoices-management-c4ef0.firebasestorage.app`
 
-### Quick Fix via Google Cloud Shell:
-Copy and paste this into the Firebase Cloud Shell:
-```bash
-echo '[{"origin": ["*"],"method": ["GET", "POST", "PUT", "DELETE", "HEAD"],"maxAgeSeconds": 3600}]' > cors.json && gsutil cors set cors.json gs://invoices-management-c4ef0.firebasestorage.app
-```
+## 5. Version Control Workflow
+1. Create a feature branch from `develop`.
+2. Build and deploy to **Development** environment for testing.
+3. Merge feature branch into `develop`.
+4. When ready for release, merge `develop` into `main`.
+5. Build and deploy to **Production** environment.
+6. Tag the release: `git tag -a v1.3.7 -m "Release version 1.3.7"`
 
-## 4. Troubleshooting Caching Issues
-If you deploy but don't see changes:
-1. **Version Bump**: Increment the version string in `lib/features/invoice/invoice_page.dart`.
-2. **Hard Refresh**: Press `Cmd + Shift + R` (Mac) or `Ctrl + F5` (Windows) in the browser.
-3. **Incognito Mode**: Test in a private window to bypass local storage/service workers.
-4. **Clean Build**: Ensure you ran `flutter clean` before building.
+## 6. Troubleshooting
+- **Caching**: Increment the version string in `lib/main.dart` or `invoice_page.dart` to force a service worker update.
+- **Wrong Project**: Always run `firebase use` before deploying to verify the target project.
+- **Environment Mismatch**: Ensure your `--dart-define` matches the `firebase use` target.
