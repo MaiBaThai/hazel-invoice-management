@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/invoice_model.dart';
+import '../../data/models/expense_model.dart';
 import '../../data/services/database_service.dart';
 
 class DashboardProvider extends ChangeNotifier {
@@ -8,12 +9,18 @@ class DashboardProvider extends ChangeNotifier {
   double _todayRevenue = 0;
   double _monthRevenue = 0;
   double _yearRevenue = 0;
+
+  double _todayExpenses = 0;
+  double _monthExpenses = 0;
+  double _yearExpenses = 0;
   
-  // Chart data: List of daily revenues for the last 7 days (index 0 is today - 6, index 6 is today)
+  // Chart data: List of daily values for the last 7 days (index 0 is today - 6, index 6 is today)
   List<double> _last7DaysRevenue = List.filled(7, 0.0);
+  List<double> _last7DaysExpenses = List.filled(7, 0.0);
   
-  // Raw invoices for the last 7 days, grouped by index (0-6)
+  // Raw invoices and expenses for the last 7 days, grouped by index (0-6)
   List<List<Invoice>> _dailyInvoices = List.generate(7, (_) => []);
+  List<List<Expense>> _dailyExpenses = List.generate(7, (_) => []);
   
   bool _isLoading = false;
 
@@ -21,8 +28,18 @@ class DashboardProvider extends ChangeNotifier {
   double get todayRevenue => _todayRevenue;
   double get monthRevenue => _monthRevenue;
   double get yearRevenue => _yearRevenue;
+
+  double get todayExpenses => _todayExpenses;
+  double get monthExpenses => _monthExpenses;
+  double get yearExpenses => _yearExpenses;
+
+  double get monthProfit => _monthRevenue - _monthExpenses;
+  double get profitMargin => _monthRevenue > 0 ? ((_monthRevenue - _monthExpenses) / _monthRevenue) * 100 : 0;
+
   List<double> get last7DaysRevenue => _last7DaysRevenue;
+  List<double> get last7DaysExpenses => _last7DaysExpenses;
   List<List<Invoice>> get dailyInvoices => _dailyInvoices;
+  List<List<Expense>> get dailyExpenses => _dailyExpenses;
   bool get isLoading => _isLoading;
 
   Future<void> loadDashboardData() async {
@@ -36,9 +53,15 @@ class DashboardProvider extends ChangeNotifier {
       
       final fetchSince = startOfYear.isBefore(sevenDaysAgo) ? startOfYear : sevenDaysAgo;
       
-      final invoices = await _dbService.getInvoicesSince(fetchSince);
+      final results = await Future.wait([
+        _dbService.getInvoicesSince(fetchSince),
+        _dbService.getExpensesSince(fetchSince),
+      ]);
+
+      final invoices = results[0] as List<Invoice>;
+      final expenses = results[1] as List<Expense>;
       
-      _calculateStats(invoices, now);
+      _calculateStats(invoices, expenses, now);
     } catch (e) {
       debugPrint('Error loading dashboard data: $e');
     } finally {
@@ -47,35 +70,36 @@ class DashboardProvider extends ChangeNotifier {
     }
   }
 
-  void _calculateStats(List<Invoice> invoices, DateTime now) {
+  void _calculateStats(List<Invoice> invoices, List<Expense> expenses, DateTime now) {
     _todayRevenue = 0;
     _monthRevenue = 0;
     _yearRevenue = 0;
+    _todayExpenses = 0;
+    _monthExpenses = 0;
+    _yearExpenses = 0;
     _last7DaysRevenue = List.filled(7, 0.0);
+    _last7DaysExpenses = List.filled(7, 0.0);
     _dailyInvoices = List.generate(7, (_) => []);
+    _dailyExpenses = List.generate(7, (_) => []);
 
     final todayDate = DateTime(now.year, now.month, now.day);
     
+    // Process Invoices
     for (var invoice in invoices) {
       final date = invoice.createdAt;
       final invoiceDate = DateTime(date.year, date.month, date.day);
       
-      // Year stat
       if (date.year == now.year) {
         _yearRevenue += invoice.finalTotal;
+        if (date.month == now.month) {
+          _monthRevenue += invoice.finalTotal;
+        }
       }
       
-      // Month stat
-      if (date.year == now.year && date.month == now.month) {
-        _monthRevenue += invoice.finalTotal;
-      }
-      
-      // Today stat
       if (invoiceDate == todayDate) {
         _todayRevenue += invoice.finalTotal;
       }
       
-      // 7 Days Chart stat
       final differenceInDays = todayDate.difference(invoiceDate).inDays;
       if (differenceInDays >= 0 && differenceInDays < 7) {
         final index = 6 - differenceInDays;
@@ -84,8 +108,35 @@ class DashboardProvider extends ChangeNotifier {
       }
     }
 
-    // Sort invoices within each day by creation time (newest first)
+    // Process Expenses
+    for (var expense in expenses) {
+      final date = expense.createdAt;
+      final expenseDate = DateTime(date.year, date.month, date.day);
+      
+      if (date.year == now.year) {
+        _yearExpenses += expense.totalCost;
+        if (date.month == now.month) {
+          _monthExpenses += expense.totalCost;
+        }
+      }
+      
+      if (expenseDate == todayDate) {
+        _todayExpenses += expense.totalCost;
+      }
+      
+      final differenceInDays = todayDate.difference(expenseDate).inDays;
+      if (differenceInDays >= 0 && differenceInDays < 7) {
+        final index = 6 - differenceInDays;
+        _last7DaysExpenses[index] += expense.totalCost;
+        _dailyExpenses[index].add(expense);
+      }
+    }
+
+    // Sort invoices
     for (var list in _dailyInvoices) {
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    }
+    for (var list in _dailyExpenses) {
       list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     }
   }

@@ -4,7 +4,9 @@ import 'package:nms/core/providers/invoice_provider.dart';
 import 'package:nms/core/providers/dashboard_provider.dart';
 import 'package:nms/core/providers/customer_provider.dart';
 import 'package:nms/core/providers/settings_provider.dart';
+import 'package:nms/core/providers/expense_provider.dart';
 import 'package:nms/features/invoice/invoice_page.dart';
+import 'package:nms/features/expenses/expenses_page.dart';
 import 'package:nms/features/dashboard/dashboard_page.dart';
 import 'package:nms/features/customers/customers_page.dart';
 import 'package:nms/features/settings/settings_page.dart';
@@ -29,6 +31,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => CustomerProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()..loadSettings()),
+        ChangeNotifierProvider(create: (_) => ExpenseProvider()),
       ],
       child: const NMSApp(),
     ),
@@ -41,7 +44,7 @@ class NMSApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NMS v1.3.8',
+      title: 'NMS v1.4.1',
       theme: ThemeData(
         primarySwatch: Colors.pink,
         useMaterial3: true,
@@ -63,6 +66,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
 
   static const List<Widget> _pages = <Widget>[
     InvoicePage(),
+    ExpensesPage(),
     DashboardPage(),
     CustomersPage(),
     SettingsPage(),
@@ -72,9 +76,9 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     setState(() {
       _selectedIndex = index;
     });
-    if (index == 1) {
+    if (index == 2) {
       Provider.of<DashboardProvider>(context, listen: false).loadDashboardData();
-    } else if (index == 2) {
+    } else if (index == 3) {
       Provider.of<CustomerProvider>(context, listen: false).loadCustomers();
     }
   }
@@ -91,6 +95,11 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long),
             label: 'Invoice',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.payments_outlined),
+            activeIcon: Icon(Icons.payments),
+            label: 'Expenses',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
