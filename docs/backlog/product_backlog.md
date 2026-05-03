@@ -48,6 +48,16 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [ ] **STORY-022**: As a user, I want to see the impact of expenses on my daily/monthly profit on the Dashboard.
 
 ## Changelogs - May 3, 2026
+### v1.4.1 - Expense Management & Dashboard UI (2026-05-03)
+- **New Feature**: Full Expense Management system with itemized cost tracking.
+- **Dashboard Upgrade**: Integrated Profit & Loss metrics (Revenue vs Expenses).
+- **UI Enhancement**: Dual-data performance chart (last 7 days).
+- **UX Improvement**: New "Daily Performance" dialog with tabs for Revenue and Expenses.
+- **UX Improvement**: Redesigned Invoice Detail view with drag handle and close button for better mobile accessibility.
+- **Photo Integration**: Integrated photo thumbnails into the daily invoice detail with full-screen viewing support.
+- **Rendering Fixes**: Switched to `Wrap` layout for photos and added loading/error handling to stabilize web rendering.
+- **CORS Management**: Configured production Storage CORS to ensure cross-origin image loading works correctly.
+
 ### v1.3.9
 - **Expense Management**: Introduced a new Expenses tab for tracking studio costs.
 - **Categorization**: Added quick-add chips for Rent, Supplies, and Utilities (Electricity, Water, Internet).
