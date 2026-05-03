@@ -1,4 +1,4 @@
-# Tài Liệu Hệ Thống — Nail Management System (NMS) v1.3.6
+# Tài Liệu Hệ Thống — Nail Management System (NMS) v1.4.1
 
 > **Mục đích**: Tài liệu tham khảo toàn diện từ tổng quan đến chi tiết, giúp hiểu rõ kiến trúc, luồng kỹ thuật, và luồng người dùng của ứng dụng NMS.
 
@@ -9,8 +9,8 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | **Tên dự án** | Nail Management System (NMS) |
-| **Phiên bản** | v1.3.6 |
-| **Mục tiêu** | Công cụ quản lý cá nhân zero-cost cho tiệm nail: theo dõi doanh thu, lịch sử khách hàng, xuất hóa đơn với QR thanh toán |
+| **Phiên bản** | v1.4.1 |
+| **Mục tiêu** | Công cụ quản lý cá nhân zero-cost cho tiệm nail: theo dõi doanh thu, chi phí (expenses), lịch sử khách hàng, xuất hóa đơn với QR thanh toán |
 | **Nền tảng chính** | Flutter Web (PWA) |
 | **Nền tảng phụ** | iOS/iPadOS (native build, chưa cấu hình Firebase) |
 | **Backend** | Firebase (Firestore, Storage, Hosting) |
@@ -53,6 +53,7 @@
 graph TB
     subgraph "Presentation Layer"
         IP["InvoicePage"]
+        EP["ExpensesPage"]
         DP["DashboardPage"]
         CP["CustomersPage + DetailPage"]
         SP["SettingsPage"]
@@ -60,6 +61,7 @@ graph TB
 
     subgraph "Business Logic Layer"
         InvP["InvoiceProvider"]
+        ExpP["ExpenseProvider"]
         DashP["DashboardProvider"]
         CustP["CustomerProvider"]
         SetP["SettingsProvider"]
@@ -69,6 +71,7 @@ graph TB
         DB["DatabaseService"]
         CM["Customer Model"]
         IM["Invoice + ServiceItem Model"]
+        EM["Expense Model"]
         AM["AppSettings + BankConfig Model"]
     end
 
@@ -112,13 +115,15 @@ lib/
 ├── core/
 │   └── providers/
 │       ├── invoice_provider.dart      # State: tạo hóa đơn, tìm khách hàng
-│       ├── dashboard_provider.dart    # State: thống kê doanh thu, biểu đồ
+│       ├── expense_provider.dart      # State: quản lý chi phí (expenses)
+│       ├── dashboard_provider.dart    # State: thống kê doanh thu, biểu đồ, P&L
 │       ├── customer_provider.dart     # State: CRUD khách hàng, upload ảnh
 │       └── settings_provider.dart     # State: cấu hình dịch vụ, ngân hàng
 ├── data/
 │   ├── models/
 │   │   ├── customer_model.dart        # Customer entity
 │   │   ├── invoice_model.dart         # Invoice + ServiceItem entities
+│   │   ├── expense_model.dart         # Expense entity
 │   │   └── app_settings_model.dart    # AppSettings + BankConfig entities
 │   └── services/
 │       └── database_service.dart      # Firestore + Storage CRUD operations
@@ -128,11 +133,16 @@ lib/
     │   └── widgets/
     │       ├── customer_search_dialog.dart
     │       ├── add_customer_dialog.dart
-    │       └── invoice_summary_dialog.dart
-    ├── dashboard/
-    │   ├── dashboard_page.dart        # Tab 2: Thống kê doanh thu
+    │       ├── invoice_summary_dialog.dart
+    │       └── invoice_detail_view.dart   # Reusable detail view (drag-to-close)
+    ├── expenses/
+    │   ├── expenses_page.dart         # Tab 2: Quản lý chi phí studio
     │   └── widgets/
-    │       ├── daily_invoices_dialog.dart
+    │       └── expense_summary_dialog.dart
+    ├── dashboard/
+    │   ├── dashboard_page.dart        # Tab 3: Thống kê doanh thu & P&L
+    │   └── widgets/
+    │       ├── daily_details_dialog.dart  # Dual-view (Revenue/Expense)
     │       └── customer_history_dialog.dart
     ├── customers/
     │   ├── customers_page.dart        # Tab 3: Danh sách khách hàng
@@ -178,6 +188,16 @@ lib/
 | `final_total` | double | Tổng sau giảm giá |
 | `photoUrls` | Array of String | URLs ảnh trên Firebase Storage |
 | `created_at` | Timestamp | Thời điểm tạo |
+
+### 5.3 Expense
+| Field | Type | Ghi chú |
+|---|---|---|
+| `id` | String | Auto-generated |
+| `items` | Array of ServiceItem | Danh sách các hạng mục chi phí |
+| `total_cost` | double | Tổng chi phí |
+| `note` | String | Ghi chú thêm |
+| `category` | String | Phân loại (Rent, Supplies, Utilities, etc.) |
+| `created_at` | Timestamp | Thời điểm phát sinh chi phí |
 
 ### 5.3 AppSettings và BankConfig
 
@@ -234,6 +254,7 @@ erDiagram
 |---|---|---|
 | `customers` | auto-generated | Mỗi doc = 1 khách hàng |
 | `invoices` | auto-generated | Mỗi doc = 1 hóa đơn, liên kết qua `customer_id` |
+| `expenses` | auto-generated | Mỗi doc = 1 bản ghi chi phí |
 | `configs` | `app_settings` | Singleton document chứa cấu hình app |
 
 **Firebase Storage path:**
@@ -265,17 +286,17 @@ customers/{customerId}/invoices/{invoiceId}/{timestamp}.jpg
 Hàm `_normalizeAndRemoveDiacritics()` chuyển ký tự có dấu thành không dấu (`àáạảã` → `a`, `đ` → `d`) và strip combining marks (`\u0300-\u036f`) để xử lý NFD encoding trên Mac/iOS. Tìm kiếm chạy trên in-memory cache, không gọi Firestore mỗi lần gõ.
 
 ### 7.2 DashboardProvider
-**Trách nhiệm:** Tính toán thống kê doanh thu.
+**Trách nhiệm:** Tính toán thống kê doanh thu và chi phí (P&L).
 
 | State | Type | Mô tả |
 |---|---|---|
-| `todayRevenue` | double | Doanh thu hôm nay |
-| `monthRevenue` | double | Doanh thu tháng này |
-| `yearRevenue` | double | Doanh thu năm nay |
-| `last7DaysRevenue` | List of 7 doubles | Doanh thu mỗi ngày trong 7 ngày qua |
-| `dailyInvoices` | List of 7 invoice lists | Hóa đơn theo từng ngày |
+| `todayRevenue/Expense` | double | Doanh thu/Chi phí hôm nay |
+| `monthRevenue/Expense` | double | Doanh thu/Chi phí tháng này |
+| `yearRevenue/Expense` | double | Doanh thu/Chi phí năm nay |
+| `last7DaysData` | List of Data | Dữ liệu doanh thu & chi phí 7 ngày qua |
+| `dailyInvoices/Expenses` | Map | Dữ liệu chi tiết theo từng ngày |
 
-**Logic:** Fetch tất cả invoices từ `startOfYear`, rồi phân loại vào các bucket thống kê trong 1 lần duyệt duy nhất (O(n)).
+**Logic:** Fetch invoices và expenses, phân loại vào các bucket thống kê để tính Net Profit (Lợi nhuận ròng).
 
 ### 7.3 CustomerProvider
 **Trách nhiệm:** CRUD khách hàng, quản lý ảnh.
@@ -516,6 +537,7 @@ flowchart LR
 | Phase 2 | Dashboard + Revenue Reports | ✅ Done |
 | Phase 3 | Settings + Predefined Services | ✅ Done |
 | Phase 3.5 | Photo Management + VietQR | ✅ Done |
-| Phase 4 | iOS native build (FlutterFire CLI) | 🔲 Pending |
-| Phase 5 | Firebase Auth (bảo mật multi-user) | 🔲 Pending |
-| Phase 6 | Export reports (PDF/Excel) | 🔲 Pending |
+| Phase 4 | Expense Management & Profit/Loss | ✅ Done |
+| Phase 5 | iOS native build (FlutterFire CLI) | 🔲 Pending |
+| Phase 6 | Firebase Auth (bảo mật multi-user) | 🔲 Pending |
+| Phase 7 | Export reports (PDF/Excel) | 🔲 Pending |
