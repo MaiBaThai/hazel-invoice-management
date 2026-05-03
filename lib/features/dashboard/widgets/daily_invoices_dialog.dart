@@ -111,28 +111,45 @@ class DailyInvoicesDialog extends StatelessWidget {
                                 if (invoice.photoUrls.isNotEmpty) ...[
                                   const SizedBox(height: 12),
                                   const Text('Photos:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                  const SizedBox(height: 4),
-                                  SizedBox(
-                                    height: 60,
-                                    child: ListView.separated(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: invoice.photoUrls.length,
-                                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                                      itemBuilder: (context, pIndex) {
-                                        return GestureDetector(
-                                          onTap: () => _viewImage(context, invoice.photoUrls[pIndex]),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(4),
-                                            child: Image.network(
-                                              invoice.photoUrls[pIndex],
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: invoice.photoUrls.map((url) => GestureDetector(
+                                      onTap: () => _viewImage(context, url),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          url,
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null) return child;
+                                            return Container(
                                               width: 60,
                                               height: 60,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
+                                              color: Colors.grey[200],
+                                              child: const Center(
+                                                child: SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              width: 60,
+                                              height: 60,
+                                              color: Colors.grey[200],
+                                              child: const Icon(Icons.broken_image, color: Colors.grey, size: 20),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    )).toList(),
                                   ),
                                 ],
                               ],
@@ -184,7 +201,27 @@ class DailyInvoicesDialog extends StatelessWidget {
         child: Stack(
           children: [
             InteractiveViewer(
-              child: Center(child: Image.network(url)),
+              child: Center(
+                child: Image.network(
+                  url,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(child: CircularProgressIndicator());
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.broken_image, color: Colors.white, size: 50),
+                          SizedBox(height: 16),
+                          Text('Error loading image', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
             Positioned(
               top: 40,
