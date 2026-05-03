@@ -44,7 +44,7 @@ class NMSApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NMS v1.3.9',
+      title: 'NMS v1.4.1',
       theme: ThemeData(
         primarySwatch: Colors.pink,
         useMaterial3: true,

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../core/providers/dashboard_provider.dart';
 import '../../../data/models/invoice_model.dart';
+import '../../invoice/widgets/invoice_detail_view.dart';
 
 class CustomerHistoryDialog extends StatefulWidget {
   final String customerId;
