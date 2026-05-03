@@ -18,6 +18,7 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-007**: As a user, I want a visual bar chart showing revenue for the last 7 days.
 - [x] **STORY-008**: As a user, I want to search customer history by Name or Phone number.
 - [x] **STORY-009**: As a user, I want to view a chronological list of all past invoices for a specific customer.
+- [x] **STORY-019**: As a user, I want to expand daily revenue rows to see detailed service breakdowns and photos.
 
 ## Epic 3: Configuration & Settings [DONE]
 - [x] Story 1: As a user, I want to edit/delete customer information to maintain a clean database.
@@ -39,6 +40,13 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-016**: As a user, I want a centralized photo library for each customer.
 - [x] **STORY-017**: As a user, I want to delete photos from both the invoice and the gallery view.
 - [x] **STORY-018**: As a user, I want to edit customer names and phone numbers to keep records accurate.
+
+## Changelogs - May 3, 2026
+### v1.3.8
+- **Dashboard Drill-down**: Replaced the static daily revenue list with an expandable view showing services, discounts, and subtotals.
+- **Photo Integration**: Integrated photo thumbnails into the daily invoice detail with full-screen viewing support.
+- **Rendering Fixes**: Switched to `Wrap` layout for photos and added loading/error handling to stabilize web rendering.
+- **CORS Management**: Configured production Storage CORS to ensure cross-origin image loading works correctly.
 
 ## Changelogs - April 29, 2026
 ### v1.3.2 - v1.3.6
