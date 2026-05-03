@@ -9,12 +9,17 @@ import 'package:nms/features/dashboard/dashboard_page.dart';
 import 'package:nms/features/customers/customers_page.dart';
 import 'package:nms/features/settings/settings_page.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; 
+import 'firebase_options_dev.dart' as dev;
+import 'firebase_options_prod.dart' as prod;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  const String environment = String.fromEnvironment('ENVIRONMENT', defaultValue: 'dev');
+  
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+    options: environment == 'prod' 
+        ? prod.DefaultFirebaseOptions.currentPlatform 
+        : dev.DefaultFirebaseOptions.currentPlatform,
   );
   
   runApp(

@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyBxMCMRQclhtoPe3v2YDaWgbhsWo58s1Pg</string>
+	<string>AIzaSyCRaut_x8i3Ysn9Az2fp3rKJdXZegNcs5s</string>
 	<key>GCM_SENDER_ID</key>
-	<string>129058045899</string>
+	<string>758686692514</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.nms</string>
+	<string>com.maibathai.invoice.dev</string>
 	<key>PROJECT_ID</key>
-	<string>invoices-management-c4ef0</string>
+	<string>invocie-management</string>
 	<key>STORAGE_BUCKET</key>
-	<string>invoices-management-c4ef0.firebasestorage.app</string>
+	<string>invocie-management.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:129058045899:ios:182eb38dda9b300759404e</string>
+	<string>1:758686692514:ios:0ddb41d0463b0e65f693fb</string>
 </dict>
 </plist>

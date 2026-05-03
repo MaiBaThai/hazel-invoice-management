@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "production": "invoices-management-c4ef0",
+    "development": "invocie-management"
+  },
+  "targets": {},
+  "etags": {}
+}
