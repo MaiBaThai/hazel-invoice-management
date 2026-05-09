@@ -4,7 +4,14 @@ import '../../data/models/invoice_model.dart';
 import '../../data/services/database_service.dart';
 
 class InvoiceProvider extends ChangeNotifier {
-  final DatabaseService _dbService = DatabaseService();
+  DatabaseService _dbService;
+
+  InvoiceProvider(this._dbService);
+
+  void updateDbService(DatabaseService newService) {
+    _dbService = newService;
+    notifyListeners();
+  }
 
   Customer? _selectedCustomer;
   List<ServiceItem> _services = [];
@@ -123,16 +130,32 @@ class InvoiceProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> createNewCustomer(String name, String phone) async {
-    final customer = Customer(id: '', name: name, phone: phone);
-    final id = await _dbService.addCustomer(customer);
-    final newCustomer = customer.copyWith(id: id);
-    _selectedCustomer = newCustomer;
-    
-    // Add to cache so it's searchable immediately
-    _allCustomers.add(newCustomer);
-    
-    notifyListeners();
+  Future<void> createNewCustomer(BuildContext context, String name, String phone) async {
+    try {
+      final customer = Customer(id: '', name: name, phone: phone);
+      
+      // Use a timeout to prevent infinite hang if Firestore permissions fail
+      final id = await _dbService.addCustomer(customer).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Connection timeout. Please check your internet or permissions.'),
+      );
+      
+      final newCustomer = customer.copyWith(id: id);
+      _selectedCustomer = newCustomer;
+      
+      // Add to cache so it's searchable immediately
+      _allCustomers.add(newCustomer);
+      
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error creating customer: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating customer: $e'), backgroundColor: Colors.red),
+        );
+      }
+      rethrow;
+    }
   }
 
   // Calculations

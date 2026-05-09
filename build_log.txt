@@ -1,0 +1,86 @@
+Compiling lib/main.dart for the Web...                          
+Wasm dry run findings:
+Found incompatibilities with WebAssembly.
+
+package:nms/features/invoice/widgets/invoice_summary_dialog.dart 12:1 - dart:js unsupported (1)
+
+Consider addressing these issues to enable wasm builds. See docs for more info: https://docs.flutter.dev/platform-integration/web/wasm
+
+Use --no-wasm-dry-run to disable these warnings.
+Target dart2js failed: ProcessException: Process exited abnormally with exit code 1:
+lib/core/providers/auth_provider.dart:5:8:
+Error: Error when reading 'lib/core/services/migration_service.dart': Error reading 'lib/core/services/migration_service.dart'  (No such file or directory)
+import '../services/migration_service.dart';
+       ^
+lib/core/providers/auth_provider.dart:10:9:
+Error: Type 'MigrationService' not found.
+  final MigrationService _migrationService = MigrationService();
+        ^^^^^^^^^^^^^^^^
+lib/core/providers/auth_provider.dart:9:38:
+Error: Couldn't find constructor 'GoogleSignIn'.
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+                                     ^^^^^^^^^^^^
+lib/core/providers/auth_provider.dart:10:9:
+Error: 'MigrationService' isn't a type.
+  final MigrationService _migrationService = MigrationService();
+        ^^^^^^^^^^^^^^^^
+lib/core/providers/auth_provider.dart:10:46:
+Error: Method not found: 'MigrationService'.
+  final MigrationService _migrationService = MigrationService();
+                                             ^^^^^^^^^^^^^^^^
+lib/core/providers/auth_provider.dart:50:67:
+Error: The method 'signIn' isn't defined for the type 'GoogleSignIn'.
+ - 'GoogleSignIn' is from 'package:google_sign_in/google_sign_in.dart' ('../../../.pub-cache/hosted/pub.dev/google_sign_in-7.2.0/lib/google_sign_in.dart').
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+                                                                  ^^^^^^
+lib/core/providers/auth_provider.dart:58:33:
+Error: The getter 'accessToken' isn't defined for the type 'GoogleSignInAuthentication'.
+ - 'GoogleSignInAuthentication' is from 'package:google_sign_in/src/token_types.dart' ('../../../.pub-cache/hosted/pub.dev/google_sign_in-7.2.0/lib/src/token_types.dart').
+        accessToken: googleAuth.accessToken,
+                                ^^^^^^^^^^^
+Error: Compilation failed.
+  Command: /opt/homebrew/share/flutter/bin/cache/dart-sdk/bin/dart compile js --platform-binaries=/opt/homebrew/share/flutter/bin/cache/flutter_web_sdk/kernel --invoker=flutter_tool -Ddart.vm.product=true -DENVIRONMENT=dev -DFLUTTER_VERSION=3.41.7 -DFLUTTER_CHANNEL=stable -DFLUTTER_GIT_URL=https://github.com/flutter/flutter.git -DFLUTTER_FRAMEWORK_REVISION=cc0734ac71 -DFLUTTER_ENGINE_REVISION=59aa584fdf -DFLUTTER_DART_VERSION=3.11.5 -DFLUTTER_WEB_USE_SKIA=true -DFLUTTER_WEB_USE_SKWASM=false -DFLUTTER_WEB_CANVASKIT_URL=https://www.gstatic.com/flutter-canvaskit/59aa584fdf100e6c78c785d8a5b565d1de4b48ab/ --native-null-assertions --no-source-maps -O4 --minify -o /Users/maibathai/Documents/Personal/invoice/.dart_tool/flutter_build/a2fa7f4a8123652be15de7745bf905ff/app.dill --packages=/Users/maibathai/Documents/Personal/invoice/.dart_tool/package_config.json --cfe-only /Users/maibathai/Documents/Personal/invoice/.dart_tool/flutter_build/a2fa7f4a8123652be15de7745bf905ff/main.dart
+#0      RunResult.throwException (package:flutter_tools/src/base/process.dart:153:5)
+#1      _DefaultProcessUtils.run (package:flutter_tools/src/base/process.dart:379:19)
+<asynchronous suspension>
+#2      Dart2JSTarget.build (package:flutter_tools/src/build_system/targets/web.dart:208:5)
+<asynchronous suspension>
+#3      _BuildInstance._invokeInternal (package:flutter_tools/src/build_system/build_system.dart:937:9)
+<asynchronous suspension>
+#4      Future.wait.<anonymous closure> (dart:async/future.dart:546:21)
+<asynchronous suspension>
+#5      _BuildInstance.invokeTarget (package:flutter_tools/src/build_system/build_system.dart:875:32)
+<asynchronous suspension>
+#6      Future.wait.<anonymous closure> (dart:async/future.dart:546:21)
+<asynchronous suspension>
+#7      _BuildInstance.invokeTarget (package:flutter_tools/src/build_system/build_system.dart:875:32)
+<asynchronous suspension>
+#8      FlutterBuildSystem.build (package:flutter_tools/src/build_system/build_system.dart:684:16)
+<asynchronous suspension>
+#9      WebBuilder.buildWeb (package:flutter_tools/src/web/compile.dart:107:34)
+<asynchronous suspension>
+#10     BuildWebCommand.runCommand (package:flutter_tools/src/commands/build_web.dart:300:5)
+<asynchronous suspension>
+#11     FlutterCommand.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command.dart:1590:27)
+<asynchronous suspension>
+#12     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#13     CommandRunner.runCommand (package:args/command_runner.dart:212:13)
+<asynchronous suspension>
+#14     FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:496:9)
+<asynchronous suspension>
+#15     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#16     FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:431:5)
+<asynchronous suspension>
+#17     FlutterCommandRunner.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:307:33)
+<asynchronous suspension>
+#18     run.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:104:11)
+<asynchronous suspension>
+#19     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#20     main (package:flutter_tools/executable.dart:103:3)
+<asynchronous suspension>
+
+Compiling lib/main.dart for the Web...                             25.3s
+Error: Failed to compile application for the Web.

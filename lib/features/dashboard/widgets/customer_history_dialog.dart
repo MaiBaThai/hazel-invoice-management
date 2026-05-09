@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../../core/providers/dashboard_provider.dart';
+import '../../../core/providers/customer_provider.dart';
 import '../../../data/models/invoice_model.dart';
-import '../../invoice/widgets/invoice_detail_view.dart';
 
 class CustomerHistoryDialog extends StatefulWidget {
   final String customerId;
@@ -31,14 +30,14 @@ class _CustomerHistoryDialogState extends State<CustomerHistoryDialog> {
     _currentName = widget.customerName;
     _currentPhone = widget.customerPhone;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<DashboardProvider>(context, listen: false)
-          .loadCustomerHistory(widget.customerId);
+      Provider.of<CustomerProvider>(context, listen: false)
+          .loadCustomerDetails(widget.customerId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<DashboardProvider>(context);
+    final provider = Provider.of<CustomerProvider>(context);
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -85,17 +84,17 @@ class _CustomerHistoryDialogState extends State<CustomerHistoryDialog> {
               ],
             ),
             const Divider(),
-            if (provider.isLoadingHistory)
+            if (provider.isLoadingDetails)
               const Expanded(child: Center(child: CircularProgressIndicator()))
-            else if (provider.selectedCustomerHistory.isEmpty)
+            else if (provider.customerInvoices.isEmpty)
               const Expanded(child: Center(child: Text('No past invoices found.')))
             else
               Expanded(
                 child: ListView.separated(
-                  itemCount: provider.selectedCustomerHistory.length,
+                  itemCount: provider.customerInvoices.length,
                   separatorBuilder: (_, __) => const Divider(),
                   itemBuilder: (context, index) {
-                    final invoice = provider.selectedCustomerHistory[index];
+                    final invoice = provider.customerInvoices[index];
                     return _InvoiceTile(invoice: invoice);
                   },
                 ),
@@ -134,7 +133,7 @@ class _CustomerHistoryDialogState extends State<CustomerHistoryDialog> {
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
               
-              await Provider.of<DashboardProvider>(context, listen: false)
+              await Provider.of<CustomerProvider>(context, listen: false)
                   .updateCustomer(widget.customerId, nameCtrl.text.trim(), phoneCtrl.text.trim());
                   
               setState(() {
@@ -161,11 +160,13 @@ class _CustomerHistoryDialogState extends State<CustomerHistoryDialog> {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
           ElevatedButton(
             onPressed: () async {
-              await Provider.of<DashboardProvider>(context, listen: false)
+              await Provider.of<CustomerProvider>(context, listen: false)
                   .deleteCustomer(widget.customerId);
               
-              Navigator.pop(context); // Close confirmation dialog
-              Navigator.pop(context); // Close history dialog
+              if (mounted) {
+                Navigator.pop(context); // Close confirmation dialog
+                Navigator.pop(context); // Close history dialog
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             child: const Text('DELETE'),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../data/models/app_settings_model.dart';
 import '../../data/models/invoice_model.dart';
 
@@ -10,6 +11,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<SettingsProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
 
     if (provider.isLoading || provider.settings == null) {
       return const Scaffold(
@@ -25,6 +27,8 @@ class SettingsPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          _buildAccountSection(context, authProvider),
+          const SizedBox(height: 32),
           _buildBankConfigSection(context, provider),
           const SizedBox(height: 32),
           _buildServiceMenuSection(context, provider),
@@ -217,6 +221,89 @@ class SettingsPage extends StatelessWidget {
             child: const Text('SAVE'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAccountSection(BuildContext context, AuthProvider auth) {
+    return Card(
+      elevation: 0,
+      color: Colors.pink.withOpacity(0.05),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.pink.withOpacity(0.2)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const CircleAvatar(
+                  backgroundColor: Colors.pink,
+                  child: Icon(Icons.person, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        auth.isAnonymous ? 'Guest Mode' : 'Account Secured',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        auth.isAnonymous 
+                          ? 'Login to sync and backup your data' 
+                          : (auth.user?.email ?? 'Logged in'),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      ),
+                      if (const String.fromEnvironment('ENVIRONMENT', defaultValue: 'dev') == 'dev') ...[
+                        const SizedBox(height: 4),
+                        SelectableText(
+                          'UID: ${auth.isInitializing ? "Loading..." : (auth.user?.uid ?? "Unknown")}',
+                          style: TextStyle(color: Colors.pink[300], fontSize: 10, fontFamily: 'monospace'),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (auth.isAnonymous) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    try {
+                      await auth.signInWithGoogle();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Account linked successfully!')),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Login failed: $e')),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.login),
+                  label: const Text('LINK WITH GOOGLE'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.pink,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

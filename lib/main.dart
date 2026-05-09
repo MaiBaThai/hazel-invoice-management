@@ -5,6 +5,7 @@ import 'package:nms/core/providers/dashboard_provider.dart';
 import 'package:nms/core/providers/customer_provider.dart';
 import 'package:nms/core/providers/settings_provider.dart';
 import 'package:nms/core/providers/expense_provider.dart';
+import 'package:nms/core/providers/auth_provider.dart';
 import 'package:nms/features/invoice/invoice_page.dart';
 import 'package:nms/features/expenses/expenses_page.dart';
 import 'package:nms/features/dashboard/dashboard_page.dart';
@@ -13,6 +14,8 @@ import 'package:nms/features/settings/settings_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options_dev.dart' as dev;
 import 'firebase_options_prod.dart' as prod;
+import 'package:nms/data/services/database_service.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,15 +26,48 @@ void main() async {
         ? prod.DefaultFirebaseOptions.currentPlatform 
         : dev.DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Initialize Google Sign In for v7.2.0 compatibility
+  try {
+    await GoogleSignIn.instance.initialize();
+  } catch (e) {
+    debugPrint('Google Sign-In initialization warning: $e');
+    // On web, if this fails, we might need to provide a clientId explicitly.
+  }
+
+  final authProvider = AuthProvider();
+  // Don't await here to avoid blocking app startup if Auth is slow (e.g. in Incognito)
+  authProvider.signInSilently();
   
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => InvoiceProvider()),
-        ChangeNotifierProvider(create: (_) => DashboardProvider()),
-        ChangeNotifierProvider(create: (_) => CustomerProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()..loadSettings()),
-        ChangeNotifierProvider(create: (_) => ExpenseProvider()),
+        ChangeNotifierProvider.value(value: authProvider),
+        // 1. Provide DatabaseService based on Auth state
+        ProxyProvider<AuthProvider, DatabaseService>(
+          update: (_, auth, __) => DatabaseService(userId: auth.user?.uid),
+        ),
+        // 2. Provide other providers depending on DatabaseService
+        ChangeNotifierProxyProvider<DatabaseService, InvoiceProvider>(
+          create: (context) => InvoiceProvider(context.read<DatabaseService>()),
+          update: (_, db, previous) => previous!..updateDbService(db),
+        ),
+        ChangeNotifierProxyProvider<DatabaseService, DashboardProvider>(
+          create: (context) => DashboardProvider(context.read<DatabaseService>()),
+          update: (_, db, previous) => previous!..updateDbService(db),
+        ),
+        ChangeNotifierProxyProvider<DatabaseService, CustomerProvider>(
+          create: (context) => CustomerProvider(context.read<DatabaseService>()),
+          update: (_, db, previous) => previous!..updateDbService(db),
+        ),
+        ChangeNotifierProxyProvider<DatabaseService, SettingsProvider>(
+          create: (context) => SettingsProvider(context.read<DatabaseService>())..loadSettings(),
+          update: (_, db, previous) => previous!..updateDbService(db),
+        ),
+        ChangeNotifierProxyProvider<DatabaseService, ExpenseProvider>(
+          create: (context) => ExpenseProvider(context.read<DatabaseService>()),
+          update: (_, db, previous) => previous!..updateDbService(db),
+        ),
       ],
       child: const NMSApp(),
     ),

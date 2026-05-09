@@ -3,7 +3,12 @@ import '../../data/models/expense_model.dart';
 import '../../data/services/database_service.dart';
 
 class ExpenseProvider with ChangeNotifier {
-  final DatabaseService _db = DatabaseService();
+  DatabaseService _db;
+  ExpenseProvider(this._db);
+
+  void updateDbService(DatabaseService newService) {
+    _db = newService;
+  }
 
   final List<ExpenseItem> _items = [];
   String _note = '';

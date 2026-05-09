@@ -45,7 +45,14 @@ This document outlines the features and user stories for the NMS, prioritized fo
 
 - [x] **STORY-020**: As a user, I want to record expenses with itemized descriptions and costs.
 - [x] **STORY-021**: As a user, I want quick-add categories (Rent, Supplies, Utilities) to speed up expense entry.
-- [ ] **STORY-022**: As a user, I want to see the impact of expenses on my daily/monthly profit on the Dashboard.
+- [x] **STORY-022**: As a user, I want to see the impact of expenses on my daily/monthly profit on the Dashboard.
+
+## Changelogs - May 4, 2026
+### v1.5.0-beta - Auth Stabilization & Security (2026-05-04)
+- **Auth Stabilization**: Fixed `UnimplementedError` on Web by implementing native `signInWithPopup` and `linkWithPopup`.
+- **Data Scoping**: Fully implemented Firestore Security Rules to isolate user data.
+- **Migration Service**: Added logic to migrate legacy/anonymous data to permanent Google accounts.
+- **Environment Alignment**: Standardized project initialization for consistent behavior across Dev/Prod and Web/Mobile.
 
 ## Changelogs - May 3, 2026
 ### v1.4.1 - Expense Management & Dashboard UI (2026-05-03)

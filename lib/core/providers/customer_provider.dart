@@ -7,8 +7,15 @@ import '../../data/models/invoice_model.dart';
 import '../../data/services/database_service.dart';
 
 class CustomerProvider extends ChangeNotifier {
-  final DatabaseService _dbService = DatabaseService();
+  DatabaseService _dbService;
   final ImagePicker _picker = ImagePicker();
+
+  CustomerProvider(this._dbService);
+
+  void updateDbService(DatabaseService newService) {
+    _dbService = newService;
+    loadCustomers();
+  }
 
   List<Customer> _allCustomers = [];
   List<Customer> _searchResults = [];
