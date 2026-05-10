@@ -15,6 +15,7 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _user != null;
   bool get isAnonymous => _user?.isAnonymous ?? true;
   bool get isInitializing => _isInitializing;
+  MigrationService get migrationService => _migrationService;
 
   AuthProvider() {
     _user = _auth.currentUser;
@@ -24,30 +25,11 @@ class AuthProvider with ChangeNotifier {
       _user = user;
       _isInitializing = false;
       notifyListeners();
-      
-      // Trigger migration check if user is logged in (not anonymous)
-      if (user != null && !user.isAnonymous) {
-        _checkAndPerformMigration(user);
-      }
     });
   }
 
-  Future<void> _checkAndPerformMigration(User user) async {
-    if (user.email == null) return;
-    
-    try {
-      final isWhitelisted = await _migrationService.isUserWhitelisted(user.email!);
-      if (isWhitelisted) {
-        final alreadyDone = await _migrationService.hasAlreadyMigrated(user.uid);
-        if (!alreadyDone) {
-          debugPrint('Whitelisted user detected. Starting migration...');
-          await _migrationService.migrateLegacyData(user.uid);
-        }
-      }
-    } catch (e) {
-      debugPrint('Migration check failed: $e');
-    }
-  }
+  // Migration is now manual via Admin Panel
+
 
   Future<void> signInWithGoogle() async {
     try {
@@ -62,9 +44,8 @@ class AuthProvider with ChangeNotifier {
         return;
       }
 
-      // Mobile logic - Using authenticate() as it is the defined method in this version
+      // Mobile logic
       final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
-
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
@@ -77,6 +58,31 @@ class AuthProvider with ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Login failed: $e');
+      rethrow;
+    }
+  }
+
+  /// Forces a fresh Google Sign-In, ignoring the current anonymous user.
+  /// Useful when the Google account is already linked to another UID.
+  Future<void> signInWithGoogleDirectly() async {
+    try {
+      if (kIsWeb) {
+        final googleProvider = GoogleAuthProvider();
+        // Use setCustomParameters to force account selection if needed
+        googleProvider.setCustomParameters({'prompt': 'select_account'});
+        await _auth.signInWithPopup(googleProvider);
+        return;
+      }
+
+      // Mobile logic
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+      await _auth.signInWithCredential(credential);
+    } catch (e) {
+      debugPrint('Direct login failed: $e');
       rethrow;
     }
   }

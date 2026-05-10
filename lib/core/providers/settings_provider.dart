@@ -27,7 +27,10 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Add a small timeout or check if we should even try
+      // 1. Ensure user document exists for UI visibility (Non-existent ancestor fix)
+      await _dbService.syncUser();
+      
+      // 2. Load app settings
       _settings = await _dbService.getSettings();
     } catch (e) {
       debugPrint('Error loading settings: $e');

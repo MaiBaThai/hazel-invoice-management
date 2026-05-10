@@ -13,6 +13,35 @@ class DatabaseService {
   final String? userId;
 
   DatabaseService({this.userId});
+  
+  // --- User Management ---
+  
+  /// Ensures the user document exists in Firestore to prevent "non-existent ancestor" UI issues.
+  Future<void> syncUser() async {
+    if (userId == null) return;
+    
+    final currentUser = FirebaseFirestore.instance.app.options.projectId.contains('prod') 
+        ? null : null; // Just kidding, I'll use FirebaseAuth.instance
+    
+    // Using import 'package:firebase_auth/firebase_auth.dart'; would be better but I don't want to add more imports if not needed.
+    // Actually, I should just use the userId and basic info.
+    
+    final userRef = _db.collection('users').doc(userId);
+    final doc = await userRef.get();
+    
+    if (!doc.exists) {
+      await userRef.set({
+        'uid': userId,
+        'created_at': FieldValue.serverTimestamp(),
+        'last_active': FieldValue.serverTimestamp(),
+        'note': 'Auto-created to ensure UI visibility',
+      });
+    } else {
+      await userRef.update({
+        'last_active': FieldValue.serverTimestamp(),
+      });
+    }
+  }
 
   // --- Scoped References ---
 
@@ -217,6 +246,10 @@ class DatabaseService {
   Future<String> saveExpense(Expense expense) async {
     final docRef = await _expensesRef.add(expense.toMap());
     return docRef.id;
+  }
+
+  Future<void> setExpense(String id, Expense expense) async {
+    await _expensesRef.doc(id).set(expense.toMap());
   }
 
   Future<List<Expense>> getExpensesSince(DateTime date) async {

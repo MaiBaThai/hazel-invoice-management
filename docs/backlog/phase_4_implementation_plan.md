@@ -26,12 +26,13 @@ This document details the technical implementation of user authentication, data 
 - **Repository Pattern Update**:
   - Update the Data Providers/Repositories to inject the current `uid` into every query and write operation.
 
-## 3. Legacy Data Migration Strategy
+## 3. Data Migration Strategy (Manual JSON Workflow)
 
-- **Detection**: Check for records in the old global collections on the first run of v1.5.0.
-- **Automatic Migration**:
-  - If legacy data is found AND the user is recognized (e.g., via Whitelist or a one-time "Claim Data" prompt), move records to the user's private collection.
-  - Delete global records after successful verification to prevent duplication.
+- **Shift to Manual Process**: To ensure 1:1 data integrity and minimize risk during production cutover, we moved from an automatic background migration to a manual "Backup -> Verify -> Restore" workflow.
+- **MigrationService (v2.0.0)**:
+    - **Export**: Generates a standardized JSON file including search fields (`name_lowercase`), default values for missing fields, and full `AppSettings` (Bank config, Service menu).
+    - **Import**: Performs a clean 1:1 restoration into the user's private collection (`/users/{uid}/...`).
+- **User Flow**: Admin exports master data from Root -> Users login/link Google account -> Users upload JSON to restore their data.
 
 ## 4. Security Rules
 
@@ -53,21 +54,27 @@ This document details the technical implementation of user authentication, data 
 - **Limitations**:
   - **Free Tier**: Max 20 invoices and 10 expenses.
   - **Logic**: Count documents in the user's sub-collections before allowing a "Save" action.
-- **Paywall UI**: Show a modal when limits are reached, explaining the benefits of upgrading.
 - **Whitelist (Admin Bypass)**:
   - Collection: `/system_configs/access_control`
   - Field: `whitelist_emails` (Array of emails).
-  - If `user.email` is in the whitelist, set `isPremium = true` and bypass count checks.
+  - If `user.email` is in the whitelist, the user is granted Admin/Premium status and can access Migration Tools.
 
-## 6. Verification Plan
+## 6. Production Release Strategy (Go-Live Plan)
+
+1. **Phase A: Master Backup**: [DONE] Run local dev environment pointing to Production (`FLAVOR=prod`) and export all root data to a master JSON.
+2. **Phase B: Deployment**: [DONE] Deploy UID-scoped code to Production Hosting.
+3. **Phase C: Transition**: [DONE] Existing users will start with a fresh Anonymous UID. They will link their Google accounts.
+4. **Phase D: Restoration**: [DONE] Admin provides the master JSON to users; users use the "Restore" tool to recover their legacy data into their new private collections.
+
+## 7. Verification Plan
  
-- [x] Verify anonymous login works on fresh install (Verified on Web).
+- [x] Verify anonymous login works on fresh install.
 - [x] Verify data isolation (Security Rules implemented).
-- [ ] Verify legacy data migrates correctly to the new path.
-- [ ] Verify "Limit Reached" dialog triggers at exactly 20 invoices.
-- [ ] Verify whitelisted emails bypass the trial limits.
--
--## 7. Current Status (May 4, 2026)
--- **Auth Stabilization**: COMPLETED for Web using `signInWithPopup` and `linkWithPopup`.
--- **Data Migration**: Service implemented, pending Stage 2 UAT verification.
--- **Deployment**: v1.5.0-beta deployed to Firebase Hosting (dev environment).
+- [x] Verify JSON Export/Import v2.0.0 (Integrity check passed).
+- [x] Verify account linking and forced "Sign In" flow for Admin.
+- [x] Verify `AppSettings` preservation during migration.
+
+## 8. Current Status (May 10, 2026)
+- **Status**: **COMPLETED & LIVE**.
+- **Key Features**: Auth stabilization, Manual Migration Tools, Logout/Sign-in, Scoped Database logic.
+- **Environment**: Production migrated successfully on May 10, 2026. Data restored to user-scoped collections.

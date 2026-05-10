@@ -82,11 +82,13 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
     
     // Extract short bank code for vietqr (e.g., 'MB Bank' -> 'MB')
     // A robust app would use a proper list of BINs, but here we simplify:
-    final String fullBankName = bankConfig?.bankName ?? 'MB';
-    final String bankId = fullBankName.split(' ').first; 
+    final String fullBankName = bankConfig?.bankName ?? '';
+    final String bankId = fullBankName.trim().split(' ').first; 
     
-    final String accountNo = bankConfig?.accountNumber ?? '0902994602'; 
-    final String accountName = bankConfig?.accountName ?? 'VO THI BICH BAO';
+    final String accountNo = (bankConfig?.accountNumber ?? '').trim(); 
+    final String accountName = (bankConfig?.accountName ?? '').trim();
+    
+    final bool hasBankInfo = bankId.isNotEmpty && accountNo.isNotEmpty;
     
     final double amountInVnd = provider.finalTotal * 1000;
     final String description = 'NMS ${provider.selectedCustomer?.name ?? ''}'.trim();
@@ -218,26 +220,28 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                         const SizedBox(height: 32),
                         
                         // Payment QR
-                        Center(
-                          child: Column(
-                            children: [
-                              const Text('SCAN TO PAY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.grey)),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey[200]!),
-                                  borderRadius: BorderRadius.circular(12),
+                        if (hasBankInfo) ...[
+                          Center(
+                            child: Column(
+                              children: [
+                                const Text('SCAN TO PAY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.grey)),
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey[200]!),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Image.network(qrUrl, width: 180, height: 180, fit: BoxFit.contain),
                                 ),
-                                child: Image.network(qrUrl, width: 180, height: 180, fit: BoxFit.contain),
-                              ),
-                              const SizedBox(height: 8),
-                              Text('VietQR - $fullBankName', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                              Text('$accountNo - $accountName', style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                            ],
+                                const SizedBox(height: 8),
+                                Text('VietQR - $fullBankName', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                Text('$accountNo - $accountName', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
+                          const SizedBox(height: 16),
+                        ],
                         const Center(
                           child: Text('--- Thank you for choosing Hazel Nails ---', style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Colors.grey)),
                         ),
