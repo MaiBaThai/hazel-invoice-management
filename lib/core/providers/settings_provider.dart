@@ -4,7 +4,13 @@ import '../../data/models/invoice_model.dart';
 import '../../data/services/database_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
-  final DatabaseService _dbService = DatabaseService();
+  DatabaseService _dbService;
+  SettingsProvider(this._dbService);
+
+  void updateDbService(DatabaseService newService) {
+    _dbService = newService;
+    loadSettings();
+  }
 
   AppSettings? _settings;
   bool _isLoading = false;
@@ -13,13 +19,23 @@ class SettingsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   Future<void> loadSettings() async {
+    // If we don't have a userId yet, we might want to wait or use defaults
+    // In our case, DatabaseService handles null userId by looking at global configs.
+    // But to avoid hanging, we'll add a check.
+    
     _isLoading = true;
     notifyListeners();
 
     try {
+      // 1. Ensure user document exists for UI visibility (Non-existent ancestor fix)
+      await _dbService.syncUser();
+      
+      // 2. Load app settings
       _settings = await _dbService.getSettings();
     } catch (e) {
       debugPrint('Error loading settings: $e');
+      // If it fails, we fall back to default settings so the UI doesn't hang
+      _settings ??= AppSettings.defaultSettings();
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -44,8 +44,12 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
         ElevatedButton(
           onPressed: () async {
             if (_formKey.currentState!.validate()) {
-              await provider.createNewCustomer(_nameController.text, _phoneController.text);
-              if (context.mounted) Navigator.pop(context);
+              try {
+                await provider.createNewCustomer(context, _nameController.text, _phoneController.text);
+                if (context.mounted) Navigator.pop(context);
+              } catch (e) {
+                // Error is already handled with SnackBar in provider
+              }
             }
           },
           child: const Text('SAVE'),

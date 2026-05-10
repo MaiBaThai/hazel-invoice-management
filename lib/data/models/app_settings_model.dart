@@ -13,9 +13,9 @@ class BankConfig {
 
   factory BankConfig.fromMap(Map<String, dynamic> map) {
     return BankConfig(
-      bankName: map['bank_name'] ?? 'MB Bank',
-      accountNumber: map['account_number'] ?? '0902994602',
-      accountName: map['account_name'] ?? 'VO THI BICH BAO',
+      bankName: map['bank_name'] ?? '',
+      accountNumber: map['account_number'] ?? '',
+      accountName: map['account_name'] ?? '',
     );
   }
 
@@ -57,16 +57,11 @@ class AppSettings {
   factory AppSettings.defaultSettings() {
     return AppSettings(
       bankConfig: BankConfig(
-        bankName: 'MB Bank',
-        accountNumber: '0902994602',
-        accountName: 'VO THI BICH BAO',
+        bankName: '',
+        accountNumber: '',
+        accountName: '',
       ),
-      predefinedServices: [
-        ServiceItem(serviceName: 'Cắt da', price: 50.0),
-        ServiceItem(serviceName: 'Sơn Gel', price: 100.0),
-        ServiceItem(serviceName: 'Úp móng', price: 150.0),
-        ServiceItem(serviceName: 'Đắp Gel', price: 200.0),
-      ],
+      predefinedServices: [],
     );
   }
 }

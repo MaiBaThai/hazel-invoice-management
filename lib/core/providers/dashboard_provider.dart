@@ -4,7 +4,14 @@ import '../../data/models/expense_model.dart';
 import '../../data/services/database_service.dart';
 
 class DashboardProvider extends ChangeNotifier {
-  final DatabaseService _dbService = DatabaseService();
+  DatabaseService _dbService;
+  DashboardProvider(this._dbService);
+
+  void updateDbService(DatabaseService newService) {
+    _dbService = newService;
+    // We might want to reload data if the user changed
+    loadDashboardData();
+  }
 
   double _todayRevenue = 0;
   double _monthRevenue = 0;

@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../data/models/app_settings_model.dart';
 import '../../data/models/invoice_model.dart';
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+import '../../data/services/migration_service.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -10,6 +16,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<SettingsProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
 
     if (provider.isLoading || provider.settings == null) {
       return const Scaffold(
@@ -25,10 +32,79 @@ class SettingsPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          _buildAccountSection(context, authProvider),
+          if (!authProvider.isAnonymous) ...[
+            const SizedBox(height: 32),
+            _buildDataManagementSection(context, authProvider),
+          ],
+          if (authProvider.user?.email == 'thai.maiba1984@gmail.com') ...[
+            const SizedBox(height: 32),
+            _buildAdminMigrationSection(context, authProvider),
+          ],
+          const SizedBox(height: 32),
           _buildBankConfigSection(context, provider),
           const SizedBox(height: 32),
           _buildServiceMenuSection(context, provider),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDataManagementSection(BuildContext context, AuthProvider auth) {
+    return Card(
+      elevation: 0,
+      color: Colors.blue.withOpacity(0.05),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Colors.blue),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.storage, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('Data Management', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Backup your data to a local file or restore from a previous backup.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _handleBackup(context, auth),
+                    icon: const Icon(Icons.download, size: 16),
+                    label: const Text('BACKUP DATA', style: TextStyle(fontSize: 11)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _handleRestore(context, auth),
+                    icon: const Icon(Icons.upload, size: 16),
+                    label: const Text('RESTORE DATA', style: TextStyle(fontSize: 11)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigo,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -219,5 +295,423 @@ class SettingsPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildAccountSection(BuildContext context, AuthProvider auth) {
+    return Card(
+      elevation: 0,
+      color: Colors.pink.withOpacity(0.05),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.pink.withOpacity(0.2)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const CircleAvatar(
+                  backgroundColor: Colors.pink,
+                  child: Icon(Icons.person, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        auth.isAnonymous ? 'Guest Mode' : (auth.user?.email ?? 'Account Secured'),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        auth.isAnonymous 
+                          ? 'Login to sync and backup your data' 
+                          : 'UID: ${auth.user?.uid ?? "Unknown"}',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      ),
+                      if (auth.isAnonymous) ...[
+                        const SizedBox(height: 4),
+                        SelectableText(
+                          'UID: ${auth.isInitializing ? "Loading..." : (auth.user?.uid ?? "Unknown")}',
+                          style: TextStyle(color: Colors.pink[300], fontSize: 10, fontFamily: 'monospace'),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (auth.isAnonymous) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    try {
+                      await auth.signInWithGoogle();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Account linked successfully!')),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Link failed. If you already have an account, use Sign In below.')),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.link),
+                  label: const Text('SIGN UP WITH GOOGLE'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.pink,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton(
+                  onPressed: () async {
+                    try {
+                      await auth.signInWithGoogleDirectly();
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Login failed: $e')),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('ALREADY HAVE AN ACCOUNT? SIGN IN'),
+                ),
+              ),
+            ] else ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _handleLogout(context, auth),
+                  icon: const Icon(Icons.logout, color: Colors.red),
+                  label: const Text('LOGOUT', style: TextStyle(color: Colors.red)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleLogout(BuildContext context, AuthProvider auth) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('LOGOUT', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await auth.signOut();
+      // Silently sign in anonymously to keep the app working
+      await auth.signInSilently();
+    }
+  }
+
+  Widget _buildAdminMigrationSection(BuildContext context, AuthProvider auth) {
+    return Card(
+      elevation: 0,
+      color: Colors.orange.withOpacity(0.05),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Colors.orange),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.admin_panel_settings, color: Colors.orange),
+                SizedBox(width: 8),
+                Text('Admin: Migration Tools', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Advanced tools for global data migration and cleanup.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _handleManualCopy(context, auth),
+                    icon: const Icon(Icons.copy, size: 16),
+                    label: const Text('STEP 1: COPY', style: TextStyle(fontSize: 11)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _handleManualCleanup(context, auth),
+                    icon: const Icon(Icons.delete_forever, size: 16),
+                    label: const Text('STEP 2: CLEANUP', style: TextStyle(fontSize: 11)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleBackup(BuildContext context, AuthProvider auth) async {
+    final bool isAdmin = auth.user?.email == 'thai.maiba1984@gmail.com';
+    if (auth.isAnonymous) return;
+
+    try {
+      final data = await auth.migrationService.exportData(userId: isAdmin ? null : auth.user!.uid);
+      final jsonString = const JsonEncoder.withIndent('  ').convert(data);
+      
+      if (kIsWeb) {
+        final bytes = utf8.encode(jsonString);
+        final blob = html.Blob([bytes]);
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        
+        final String userLabel = auth.user?.email?.split('@').first ?? auth.user!.uid.substring(0, 8);
+        final String fileName = "nms_backup_${userLabel}_${DateTime.now().millisecondsSinceEpoch}.json";
+
+        final anchor = html.AnchorElement(href: url)
+          ..setAttribute("download", fileName)
+          ..click();
+        html.Url.revokeObjectUrl(url);
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Backup downloaded successfully!')));
+        }
+      } else {
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Backup Data (JSON)'),
+              content: SingleChildScrollView(child: SelectableText(jsonString)),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('CLOSE')),
+              ],
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Backup failed: $e')));
+      }
+    }
+  }
+
+  Future<void> _handleRestore(BuildContext context, AuthProvider auth) async {
+    if (!kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restore is only supported on Web version.')));
+      return;
+    }
+
+    final bool isAdmin = auth.user?.email == 'thai.maiba1984@gmail.com';
+    final html.FileUploadInputElement input = html.FileUploadInputElement();
+    input.accept = '.json';
+    input.click();
+
+    input.onChange.listen((event) {
+      final files = input.files;
+      if (files?.isEmpty ?? true) return;
+
+      final reader = html.FileReader();
+      reader.readAsText(files![0]);
+      reader.onLoadEnd.listen((e) async {
+        try {
+          final String content = reader.result as String;
+          final Map<String, dynamic> jsonData = jsonDecode(content);
+
+          if (!context.mounted) return;
+
+          String? targetUid;
+          bool confirmed = false;
+
+          if (isAdmin) {
+            final target = await _showAdminRestoreDialog(context);
+            if (target != null) {
+              targetUid = target == 'ROOT' ? null : target;
+              confirmed = true;
+            }
+          } else {
+            confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Confirm Restore'),
+                content: const Text('This will PERMANENTLY overwrite all your current data with the contents of the JSON file. This action cannot be undone. Proceed?'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true), 
+                    child: const Text('RESTORE NOW', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ) ?? false;
+            if (confirmed) {
+              targetUid = auth.user!.uid;
+            }
+          }
+
+          if (confirmed && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restoring data... Please wait.')));
+            await auth.migrationService.importDataFromJson(jsonData, targetUserId: targetUid);
+            
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Restore successful!')));
+            }
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Restore failed: $e')));
+          }
+        }
+      });
+    });
+  }
+
+  Future<String?> _showAdminRestoreDialog(BuildContext context) async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Admin: Restore Data'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Where do you want to restore the data?'),
+            const SizedBox(height: 16),
+            ListTile(
+              title: const Text('Restore to ROOT'),
+              subtitle: const Text('LEGACY mode (global collections)'),
+              onTap: () => Navigator.pop(context, 'ROOT'),
+            ),
+            const Divider(),
+            const Text('Or enter a specific Target UID:'),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Target UID',
+                hintText: 'e.g., qsV6v...',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('RESTORE TO UID'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleManualCopy(BuildContext context, AuthProvider auth) async {
+    final controller = TextEditingController(text: auth.user?.uid);
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Step 1: Copy Data'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter the Target User UID to receive the legacy data:'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Target UID',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Note: Data will be COPIED. No data is deleted yet.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('COPY DATA')),
+        ],
+      ),
+    );
+
+    if (confirmed == true && controller.text.isNotEmpty) {
+      try {
+        await auth.migrationService.copyLegacyData(controller.text.trim());
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copy to ${controller.text} completed!')));
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copy failed: $e')));
+        }
+      }
+    }
+  }
+
+  Future<void> _handleManualCleanup(BuildContext context, AuthProvider auth) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Step 2: Cleanup Root'),
+        content: const Text('WARNING: This will PERMANENTLY DELETE all legacy data from the root collections. ONLY do this if you have verified the migration was successful. Proceed?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('DELETE ROOT DATA', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await auth.migrationService.deleteLegacyData();
+        await auth.migrationService.markAsCompleted(auth.user!.uid);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cleanup completed! Root data is now empty.')));
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Cleanup failed: $e')));
+        }
+      }
+    }
   }
 }
