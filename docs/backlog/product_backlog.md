@@ -10,6 +10,7 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-003**: As a user, I want to apply a discount percentage to the total invoice amount.
 - [x] **STORY-004**: As a user, I want to save invoices to Firestore and have the customer's `total_spent` updated automatically.
 - [x] **STORY-005**: As a user, I want to see a beautiful summary view of the invoice with a payment QR code and an option to save as image.
+- [x] **STORY-027**: As a user, I want to view, download, and edit past invoices directly from the customer's history, with automatic `total_spent` adjustments.
 
 ## Epic 2: Reporting & Dashboard
 *Goal: Provide insights into business performance.*
@@ -46,6 +47,25 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-020**: As a user, I want to record expenses with itemized descriptions and costs.
 - [x] **STORY-021**: As a user, I want quick-add categories (Rent, Supplies, Utilities) to speed up expense entry.
 - [x] **STORY-022**: As a user, I want to see the impact of expenses on my daily/monthly profit on the Dashboard.
+
+## Epic 7: Multi-User & Security [DONE]
+*Goal: Implement secure user authentication and data isolation.*
+
+- [x] **STORY-023**: As a user, I want to use the app immediately as a guest without creating an account.
+- [x] **STORY-024**: As a user, I want to sign in with my Google account to save my data permanently.
+- [x] **STORY-025**: As a user, I want my data to be securely isolated from other users.
+- [x] **STORY-026**: As an admin, I want to backup and restore legacy data to specific user accounts.
+
+## Changelogs - May 13, 2026
+### v1.5.1 - Invoice Editing & History Polish (2026-05-13)
+- **Edit History**: Added the ability to open, view, edit, and re-download historical invoices directly from the Customer Detail page.
+- **Data Integrity**: Implemented transactional logic to recalculate and update a customer's `total_spent` automatically when an old invoice is edited.
+
+## Changelogs - May 10, 2026
+### v1.5.0 - Multi-User, Security & Migration (2026-05-10)
+- **Official Release**: Transitioned from beta to official release.
+- **Migration**: Manual JSON workflow for data migration from global to user-scoped collections.
+- **Production Deployment**: Scoped database logic and security rules deployed to production.
 
 ## Changelogs - May 4, 2026
 ### v1.5.0-beta - Auth Stabilization & Security (2026-05-04)

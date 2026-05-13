@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/customer_provider.dart';
+import '../../core/providers/invoice_provider.dart';
 import '../../data/models/invoice_model.dart';
+import '../invoice/widgets/invoice_summary_dialog.dart';
 
 class CustomerDetailPage extends StatefulWidget {
   final String customerId;
@@ -152,10 +154,28 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
                         child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                       )
                     else
-                      TextButton.icon(
-                        onPressed: () => provider.uploadPhotoForInvoice(invoice.id, widget.customerId),
-                        icon: const Icon(Icons.add_a_photo),
-                        label: const Text('Add Photo'),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton.icon(
+                            onPressed: () {
+                              final invoiceProvider = context.read<InvoiceProvider>();
+                              final customer = provider.selectedCustomer!;
+                              invoiceProvider.loadInvoiceForEditing(invoice, customer);
+                              showDialog(
+                                context: context,
+                                builder: (_) => const InvoiceSummaryDialog(),
+                              );
+                            },
+                            icon: const Icon(Icons.receipt_long),
+                            label: const Text('View Receipt'),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => provider.uploadPhotoForInvoice(invoice.id, widget.customerId),
+                            icon: const Icon(Icons.add_a_photo),
+                            label: const Text('Add Photo'),
+                          ),
+                        ],
                       ),
                   ],
                 ),

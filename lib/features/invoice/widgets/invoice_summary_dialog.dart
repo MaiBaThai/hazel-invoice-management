@@ -10,6 +10,7 @@ import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:js' as js;
+import '../../../main.dart';
 
 class InvoiceSummaryDialog extends StatefulWidget {
   const InvoiceSummaryDialog({super.key});
@@ -259,7 +260,13 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        if (provider.isEditing) {
+                          Navigator.popUntil(context, (route) => route.isFirst);
+                          mainNavKey.currentState?.switchTab(0);
+                        }
+                      },
                       child: const Text('EDIT'),
                     ),
                   ),
@@ -284,7 +291,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                       ),
                       child: provider.isSaving 
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('CONFIRM & SAVE'),
+                        : Text(provider.isEditing ? 'UPDATE INVOICE' : 'CONFIRM & SAVE'),
                     ),
                   ),
                 ],

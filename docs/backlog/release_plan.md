@@ -39,16 +39,16 @@
   - [x] **Advanced Dashboard**: Profit & Loss metrics (Revenue vs Expenses).
   - [x] **UX Polish**: Redesigned invoice detail and dual-view charts.
 
-### Phase 4: Multi-User & Security (v1.5.0) - [PLANNING]
+### Phase 4: Multi-User & Security (v1.5.0) - [COMPLETE]
 
 - **Objective**: Implement secure user authentication and data isolation for App Store readiness.
 - **Key Features**:
-  - [ ] **Guest Mode**: Implement Firebase Anonymous Auth to allow immediate usage without login.
-  - [ ] **Trial Management**: Enforcement logic for "20 Invoices / 10 Expenses" limitations.
-  - [ ] **Authentication**: Support for Google and Sign-in with Apple.
-  - [ ] **Account Linking**: Logic to "upgrade" anonymous data to a permanent account (Data Migration).
-  - [ ] **Whitelist Mechanism**: Firestore-based system to grant full access to specific UIDs/Emails (Admin/Tester bypass).
-  - [ ] **Firestore Data Scoping**: Migrate all data to `users/{uid}/...` structure with updated Security Rules.
+  - [x] **Guest Mode**: Implement Firebase Anonymous Auth to allow immediate usage without login.
+  - [x] **Trial Management**: Enforcement logic for "20 Invoices / 10 Expenses" limitations.
+  - [x] **Authentication**: Support for Google and Sign-in with Apple.
+  - [x] **Account Linking**: Logic to "upgrade" anonymous data to a permanent account (Data Migration).
+  - [x] **Whitelist Mechanism**: Firestore-based system to grant full access to specific UIDs/Emails (Admin/Tester bypass).
+  - [x] **Firestore Data Scoping**: Migrate all data to `users/{uid}/...` structure with updated Security Rules.
 
 ### Phase 5: iOS Porting & Monetization (v2.0.0) - [PLANNING]
 
@@ -70,5 +70,5 @@
 | v1.1.1       | 2026-04-29 | Phase 3: Settings, Data Management, UX Polish, PWA logic | Released |
 | v1.3.x       | 2026-04-30 | Phase 3.5: Firebase Storage, Photo Archival, CRM Polish  | Released |
 | v1.4.1       | 2026-05-03 | Phase 3.5: Expense Management, P&L Dashboard, UX Polish  | Released |
-| v1.5.0       | TBD        | Authentication, Guest Mode & Data Isolation              | Planning |
+| v1.5.0       | 2026-05-10 | Phase 4: Authentication, Guest Mode & Data Isolation     | Released |
 | v2.0.0       | TBD        | iOS Release & App Store Submission (Major Version)       | Planning |

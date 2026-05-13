@@ -16,6 +16,9 @@ import 'firebase_options_dev.dart' as dev;
 import 'firebase_options_prod.dart' as prod;
 import 'package:nms/data/services/database_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
+final GlobalKey<MainNavigationPageState> mainNavKey = GlobalKey<MainNavigationPageState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -85,7 +88,7 @@ class NMSApp extends StatelessWidget {
         primarySwatch: Colors.pink,
         useMaterial3: true,
       ),
-      home: const MainNavigationPage(),
+      home: MainNavigationPage(key: mainNavKey),
     );
   }
 }
@@ -94,10 +97,10 @@ class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
 
   @override
-  State<MainNavigationPage> createState() => _MainNavigationPageState();
+  State<MainNavigationPage> createState() => MainNavigationPageState();
 }
 
-class _MainNavigationPageState extends State<MainNavigationPage> {
+class MainNavigationPageState extends State<MainNavigationPage> {
   int _selectedIndex = 0;
 
   static const List<Widget> _pages = <Widget>[
@@ -117,6 +120,10 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     } else if (index == 3) {
       Provider.of<CustomerProvider>(context, listen: false).loadCustomers();
     }
+  }
+
+  void switchTab(int index) {
+    _onItemTapped(index);
   }
 
   @override

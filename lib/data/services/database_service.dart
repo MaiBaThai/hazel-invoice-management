@@ -174,6 +174,31 @@ class DatabaseService {
     return invoiceId;
   }
 
+  Future<void> updateInvoice(String invoiceId, Invoice newInvoice, double originalTotal) async {
+    final invoiceRef = _invoicesRef.doc(invoiceId);
+
+    await _db.runTransaction((transaction) async {
+      // 1. Verify Customer exists
+      final customerRef = _customersRef.doc(newInvoice.customerId);
+      final customerDoc = await transaction.get(customerRef);
+      
+      if (!customerDoc.exists) {
+        throw Exception('Customer with ID ${newInvoice.customerId} does not exist. They may have been deleted.');
+      }
+
+      // 2. Update Invoice Document
+      transaction.update(invoiceRef, newInvoice.toMap());
+
+      // 3. Update Customer Total Spent (compute difference)
+      final difference = newInvoice.finalTotal - originalTotal;
+      if (difference != 0) {
+        transaction.update(customerRef, {
+          'total_spent': FieldValue.increment(difference),
+        });
+      }
+    });
+  }
+
   Future<void> setInvoice(String id, Invoice invoice) async {
     await _invoicesRef.doc(id).set(invoice.toMap());
   }
