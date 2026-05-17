@@ -25,6 +25,8 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] Story 2: As a user, I want to configure my bank account for VietQR generation dynamically.
 - [x] Story 3: As a user, I want to manage a predefined list of services (Service Menu) for quick entry.
 - [x] Story 4: As a user, I want quick-add chips in the invoice tab to speed up entry.
+- [x] **STORY-028**: As a user, I want to permanently delete all my data while remaining logged in, ensuring my privacy and allowing me to start fresh.
+
 
 ## Epic 4: PWA & Platform Optimization
 *Goal: Ensure high-quality experience across devices.*
@@ -55,6 +57,11 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-024**: As a user, I want to sign in with my Google account to save my data permanently.
 - [x] **STORY-025**: As a user, I want my data to be securely isolated from other users.
 - [x] **STORY-026**: As an admin, I want to backup and restore legacy data to specific user accounts.
+
+## Changelogs - May 16, 2026
+### v1.5.2 - Data Deletion & UX Polish (2026-05-16)
+- **Data Privacy**: Implemented a secure "Danger Zone" allowing users to permanently delete all their data (Firestore & Storage) while generating an automatic backup.
+- **Session Management**: Optimized the deletion flow to keep users logged in, seamlessly resetting the app state to a clean slate without requiring re-authentication.
 
 ## Changelogs - May 13, 2026
 ### v1.5.1 - Invoice Editing & History Polish (2026-05-13)

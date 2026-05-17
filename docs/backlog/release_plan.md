@@ -71,4 +71,5 @@
 | v1.3.x       | 2026-04-30 | Phase 3.5: Firebase Storage, Photo Archival, CRM Polish  | Released |
 | v1.4.1       | 2026-05-03 | Phase 3.5: Expense Management, P&L Dashboard, UX Polish  | Released |
 | v1.5.0       | 2026-05-10 | Phase 4: Authentication, Guest Mode & Data Isolation     | Released |
+| v1.5.2       | 2026-05-16 | Phase 4: Data Deletion & Session Management UX Polish    | Ready    |
 | v2.0.0       | TBD        | iOS Release & App Store Submission (Major Version)       | Planning |
