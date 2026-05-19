@@ -26,6 +26,8 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] Story 3: As a user, I want to manage a predefined list of services (Service Menu) for quick entry.
 - [x] Story 4: As a user, I want quick-add chips in the invoice tab to speed up entry.
 - [x] **STORY-028**: As a user, I want to permanently delete all my data while remaining logged in, ensuring my privacy and allowing me to start fresh.
+- [x] **STORY-029**: As a user, I want to configure my business name and currency options (k or $) to localize the app branding and pricing.
+- [x] **STORY-030**: As a user, I want to receive a confirmation warning when changing currency settings, explaining that historical invoices are not mathematically converted.
 
 
 ## Epic 4: PWA & Platform Optimization
@@ -57,6 +59,13 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-024**: As a user, I want to sign in with my Google account to save my data permanently.
 - [x] **STORY-025**: As a user, I want my data to be securely isolated from other users.
 - [x] **STORY-026**: As an admin, I want to backup and restore legacy data to specific user accounts.
+
+## Changelogs - May 19, 2026
+### v1.6.0 - Business Profile & Global Currency Localization (2026-05-19)
+- **Business Profile**: Added a "Business Profile" configuration card to modify the business name and currency options.
+- **Branding & Localization**: Replaced hardcoded "Hazel Nails" default text and currency symbols ("k" VND) with dynamic variables dynamically fetched from `app_settings` via `SettingsProvider`.
+- **Conditional VietQR**: Dynamically disables the VietQR settings card and invoice QR code rendering when switching to foreign currencies like `$ (USD)`.
+- **Currency Settings Confirmation**: Implemented a warning pop-up dialog when changing currency settings to prevent unintended side effects on past invoices.
 
 ## Changelogs - May 16, 2026
 ### v1.5.2 - Data Deletion & UX Polish (2026-05-16)

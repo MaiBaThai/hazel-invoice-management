@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/customer_provider.dart';
+import '../../core/providers/settings_provider.dart';
+import '../../data/models/app_settings_model.dart';
 import 'customer_detail_page.dart';
 
 class CustomersPage extends StatefulWidget {
@@ -30,6 +32,14 @@ class _CustomersPageState extends State<CustomersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+    
+    String formatCurrency(num amount) {
+      final formatted = NumberFormat.decimalPattern().format(amount);
+      return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Customers', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -119,7 +129,7 @@ class _CustomersPageState extends State<CustomersPage> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '${NumberFormat.decimalPattern().format(customer.totalSpent)}k',
+                            formatCurrency(customer.totalSpent),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.pink,

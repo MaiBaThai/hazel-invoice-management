@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../core/providers/customer_provider.dart';
 import '../../core/providers/invoice_provider.dart';
 import '../../data/models/invoice_model.dart';
+import '../../core/providers/settings_provider.dart';
+import '../../data/models/app_settings_model.dart';
 import '../invoice/widgets/invoice_summary_dialog.dart';
 
 class CustomerDetailPage extends StatefulWidget {
@@ -69,7 +71,7 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
           body: TabBarView(
             controller: _tabController,
             children: [
-              _buildInvoicesTab(provider),
+              _buildInvoicesTab(context, provider),
               _buildPhotosTab(provider),
             ],
           ),
@@ -78,9 +80,17 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
     );
   }
 
-  Widget _buildInvoicesTab(CustomerProvider provider) {
+  Widget _buildInvoicesTab(BuildContext context, CustomerProvider provider) {
     if (provider.customerInvoices.isEmpty) {
       return const Center(child: Text('No invoices found'));
+    }
+
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+    
+    String formatCurrency(num amount) {
+      final formatted = NumberFormat.decimalPattern().format(amount);
+      return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
     }
 
     return ListView.builder(
@@ -96,7 +106,7 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             trailing: Text(
-              '${NumberFormat.decimalPattern().format(invoice.finalTotal)}k',
+              formatCurrency(invoice.finalTotal),
               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pink),
             ),
             children: [
@@ -109,7 +119,7 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(s.serviceName),
-                            Text('${NumberFormat.decimalPattern().format(s.price)}k'),
+                            Text(formatCurrency(s.price)),
                           ],
                         )),
                     const Divider(),

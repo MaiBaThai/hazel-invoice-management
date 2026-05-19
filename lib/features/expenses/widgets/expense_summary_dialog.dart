@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/expense_provider.dart';
 import 'package:intl/intl.dart';
+import '../../../core/providers/settings_provider.dart';
+import '../../../data/models/app_settings_model.dart';
 
 class ExpenseSummaryDialog extends StatelessWidget {
   const ExpenseSummaryDialog({super.key});
@@ -9,6 +11,13 @@ class ExpenseSummaryDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ExpenseProvider>(context);
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+    
+    String formatCurrency(num amount) {
+      final formatted = NumberFormat.decimalPattern().format(amount);
+      return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
+    }
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -43,7 +52,7 @@ class ExpenseSummaryDialog extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(child: Text(item.description.isEmpty ? 'Untitled Item' : item.description)),
-                          Text('${NumberFormat.decimalPattern().format(item.cost)}k', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(formatCurrency(item.cost), style: const TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
                     );
@@ -64,7 +73,7 @@ class ExpenseSummaryDialog extends StatelessWidget {
                 children: [
                   const Text('Total Cost', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   Text(
-                    '${NumberFormat.decimalPattern().format(provider.totalCost)}k',
+                    formatCurrency(provider.totalCost),
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.orange),
                   ),
                 ],

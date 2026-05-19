@@ -5,6 +5,7 @@ import '../../core/providers/settings_provider.dart';
 import 'widgets/customer_search_dialog.dart';
 import 'widgets/add_customer_dialog.dart';
 import 'widgets/invoice_summary_dialog.dart';
+import '../../data/models/app_settings_model.dart';
 import 'package:intl/intl.dart';
 
 class InvoicePage extends StatefulWidget {
@@ -82,12 +83,20 @@ class _InvoicePageState extends State<InvoicePage> {
 
     _syncWithProvider(provider);
 
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+
+    String formatCurrency(num amount) {
+      final formatted = NumberFormat.decimalPattern().format(amount);
+      return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           children: [
-            Text('Hazel Nails', style: TextStyle(fontWeight: FontWeight.bold)),
-            Text('v1.3.7', style: TextStyle(fontSize: 10, color: Colors.grey)),
+            Text(businessConfig.businessName, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const Text('v1.3.7', style: TextStyle(fontSize: 10, color: Colors.grey)),
           ],
         ),
         centerTitle: true,
@@ -134,7 +143,7 @@ class _InvoicePageState extends State<InvoicePage> {
                     runSpacing: 8,
                     children: predefinedServices.map((s) {
                       return ActionChip(
-                        label: Text('${s.serviceName} (${s.price}k)'),
+                        label: Text('${s.serviceName} (${formatCurrency(s.price)})'),
                         backgroundColor: Colors.pink.withOpacity(0.1),
                         side: BorderSide.none,
                         onPressed: () {
@@ -188,7 +197,8 @@ class _InvoicePageState extends State<InvoicePage> {
                         controller: _priceControllers[index],
                         decoration: InputDecoration(
                           hintText: 'Price',
-                          suffixText: 'k',
+                          prefixText: businessConfig.isPrefix ? businessConfig.currencySymbol : null,
+                          suffixText: !businessConfig.isPrefix ? businessConfig.currencySymbol : null,
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
@@ -229,7 +239,7 @@ class _InvoicePageState extends State<InvoicePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Subtotal', style: TextStyle(color: Colors.grey)),
-                      Text('${NumberFormat.decimalPattern().format(provider.subtotal)}k', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(formatCurrency(provider.subtotal), style: const TextStyle(fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const Divider(height: 24),
@@ -270,7 +280,7 @@ class _InvoicePageState extends State<InvoicePage> {
                     children: [
                       const Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                       Text(
-                        '${NumberFormat.decimalPattern().format(provider.finalTotal)}k',
+                        formatCurrency(provider.finalTotal),
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.pink),
                       ),
                     ],

@@ -275,4 +275,70 @@ class MigrationService {
     }
     return value;
   }
+
+  /// Deletes all data associated with a user in Firestore and Storage.
+  Future<void> deleteUserScopedData(String userId) async {
+    try {
+      debugPrint('Starting full data deletion for user: $userId');
+
+      // 1. Delete Firestore collections
+      final collections = ['customers', 'invoices', 'expenses', 'configs'];
+      for (final collection in collections) {
+        await _deleteCollectionInBatches(
+          _db.collection('users').doc(userId).collection(collection),
+        );
+      }
+
+      // 2. Delete the root user document
+      await _db.collection('users').doc(userId).delete();
+
+      // 3. Delete Storage files
+      try {
+        final storageRoot = DatabaseService(userId: userId).storageRoot;
+        await _deleteStorageFolder(storageRoot);
+      } catch (e) {
+        debugPrint('Note: Error during storage cleanup (might be empty): $e');
+      }
+
+      debugPrint('User data deletion completed successfully.');
+    } catch (e) {
+      debugPrint('Deletion failed: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _deleteCollectionInBatches(CollectionReference collection) async {
+    final snapshot = await collection.get();
+    if (snapshot.docs.isEmpty) return;
+
+    final batchSize = 500;
+    for (var i = 0; i < snapshot.docs.length; i += batchSize) {
+      final batch = _db.batch();
+      final chunk = snapshot.docs.skip(i).take(batchSize);
+      for (var doc in chunk) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+  }
+
+  Future<void> _deleteStorageFolder(dynamic ref) async {
+    // We use dynamic because Reference is from firebase_storage which might not be imported yet
+    // But since DatabaseService uses it, we should be fine if we import it or use it via DatabaseService
+    try {
+      final result = await ref.listAll();
+      
+      // Delete all files in this directory
+      for (final item in result.items) {
+        await item.delete();
+      }
+      
+      // Recursively delete subdirectories
+      for (final prefix in result.prefixes) {
+        await _deleteStorageFolder(prefix);
+      }
+    } catch (e) {
+      debugPrint('Storage folder cleanup warning: $e');
+    }
+  }
 }

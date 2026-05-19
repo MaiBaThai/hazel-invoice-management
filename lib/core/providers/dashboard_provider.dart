@@ -8,9 +8,28 @@ class DashboardProvider extends ChangeNotifier {
   DashboardProvider(this._dbService);
 
   void updateDbService(DatabaseService newService) {
+    debugPrint('DashboardProvider: updateDbService called with userId: ${newService.userId}');
     _dbService = newService;
-    // We might want to reload data if the user changed
-    loadDashboardData();
+    _resetStats();
+    
+    // Only load if we have a valid userId
+    if (newService.userId != null) {
+      loadDashboardData();
+    }
+  }
+
+  void _resetStats() {
+    _todayRevenue = 0;
+    _monthRevenue = 0;
+    _yearRevenue = 0;
+    _todayExpenses = 0;
+    _monthExpenses = 0;
+    _yearExpenses = 0;
+    _last7DaysRevenue = List.filled(7, 0.0);
+    _last7DaysExpenses = List.filled(7, 0.0);
+    _dailyInvoices = List.generate(7, (_) => []);
+    _dailyExpenses = List.generate(7, (_) => []);
+    notifyListeners();
   }
 
   double _todayRevenue = 0;

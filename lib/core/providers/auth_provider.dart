@@ -131,6 +131,15 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> signInAnonymously() async {
+    try {
+      await _auth.signInAnonymously();
+    } catch (e) {
+      debugPrint('Anonymous sign-in failed: $e');
+      rethrow;
+    }
+  }
+
   Future<void> signOut() async {
     await _auth.signOut();
     try {

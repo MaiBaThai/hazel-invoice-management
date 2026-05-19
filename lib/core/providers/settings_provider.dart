@@ -8,8 +8,18 @@ class SettingsProvider extends ChangeNotifier {
   SettingsProvider(this._dbService);
 
   void updateDbService(DatabaseService newService) {
+    debugPrint('SettingsProvider: updateDbService called with userId: ${newService.userId}');
     _dbService = newService;
-    loadSettings();
+    
+    // Only load if we have a valid userId
+    if (newService.userId != null) {
+      _settings = null;
+      loadSettings();
+    } else {
+      _settings = AppSettings.defaultSettings();
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   AppSettings? _settings;
@@ -28,10 +38,14 @@ class SettingsProvider extends ChangeNotifier {
 
     try {
       // 1. Ensure user document exists for UI visibility (Non-existent ancestor fix)
-      await _dbService.syncUser();
-      
       // 2. Load app settings
-      _settings = await _dbService.getSettings();
+      // Combined with a timeout to prevent stuck loading screen
+      final results = await Future.wait([
+        _dbService.syncUser(),
+        _dbService.getSettings(),
+      ]).timeout(const Duration(seconds: 10));
+      
+      _settings = results[1] as AppSettings;
     } catch (e) {
       debugPrint('Error loading settings: $e');
       // If it fails, we fall back to default settings so the UI doesn't hang
@@ -42,10 +56,24 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> updateBusinessConfig(BusinessConfig config) async {
+    if (_settings == null) return;
+    
+    _settings = AppSettings(
+      businessConfig: config,
+      bankConfig: _settings!.bankConfig,
+      predefinedServices: _settings!.predefinedServices,
+    );
+    notifyListeners();
+    
+    await _dbService.updateSettings(_settings!);
+  }
+
   Future<void> updateBankConfig(BankConfig config) async {
     if (_settings == null) return;
     
     _settings = AppSettings(
+      businessConfig: _settings!.businessConfig,
       bankConfig: config,
       predefinedServices: _settings!.predefinedServices,
     );
@@ -59,6 +87,7 @@ class SettingsProvider extends ChangeNotifier {
     
     final updatedServices = List<ServiceItem>.from(_settings!.predefinedServices)..add(service);
     _settings = AppSettings(
+      businessConfig: _settings!.businessConfig,
       bankConfig: _settings!.bankConfig,
       predefinedServices: updatedServices,
     );
@@ -74,6 +103,7 @@ class SettingsProvider extends ChangeNotifier {
     if (index >= 0 && index < updatedServices.length) {
       updatedServices[index] = service;
       _settings = AppSettings(
+        businessConfig: _settings!.businessConfig,
         bankConfig: _settings!.bankConfig,
         predefinedServices: updatedServices,
       );
@@ -90,6 +120,7 @@ class SettingsProvider extends ChangeNotifier {
     if (index >= 0 && index < updatedServices.length) {
       updatedServices.removeAt(index);
       _settings = AppSettings(
+        businessConfig: _settings!.businessConfig,
         bankConfig: _settings!.bankConfig,
         predefinedServices: updatedServices,
       );
