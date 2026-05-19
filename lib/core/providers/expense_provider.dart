@@ -8,6 +8,7 @@ class ExpenseProvider with ChangeNotifier {
 
   void updateDbService(DatabaseService newService) {
     _db = newService;
+    reset(); // Clear local state when user identity potentially changes
   }
 
   final List<ExpenseItem> _items = [];

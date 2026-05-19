@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../core/providers/customer_provider.dart';
+import '../../../core/providers/settings_provider.dart';
+import '../../../data/models/app_settings_model.dart';
 import '../../../data/models/invoice_model.dart';
 
 class CustomerHistoryDialog extends StatefulWidget {
@@ -187,6 +189,14 @@ class _InvoiceTile extends StatelessWidget {
     final format = NumberFormat.decimalPattern();
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
 
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+
+    String formatCurrency(num amount) {
+      final formatted = format.format(amount);
+      return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
@@ -200,7 +210,7 @@ class _InvoiceTile extends StatelessWidget {
                 style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
               Text(
-                '${format.format(invoice.finalTotal)}k',
+                formatCurrency(invoice.finalTotal),
                 style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pink, fontSize: 16),
               ),
             ],
@@ -210,7 +220,7 @@ class _InvoiceTile extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('- ${s.serviceName}', style: const TextStyle(fontSize: 14)),
-                  Text('${format.format(s.price)}k', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                  Text(formatCurrency(s.price), style: const TextStyle(fontSize: 14, color: Colors.grey)),
                 ],
               )),
           if (invoice.discountPercent > 0)

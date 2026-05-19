@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../core/providers/expense_provider.dart';
 import 'widgets/expense_summary_dialog.dart';
 import 'package:intl/intl.dart';
+import '../../core/providers/settings_provider.dart';
+import '../../data/models/app_settings_model.dart';
 
 class ExpensesPage extends StatefulWidget {
   const ExpensesPage({super.key});
@@ -59,6 +61,14 @@ class _ExpensesPageState extends State<ExpensesPage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<ExpenseProvider>(context);
     _syncWithProvider(provider);
+
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+    
+    String formatCurrency(num amount) {
+      final formatted = NumberFormat.decimalPattern().format(amount);
+      return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -156,7 +166,8 @@ class _ExpensesPageState extends State<ExpensesPage> {
                         controller: _costControllers[index],
                         decoration: InputDecoration(
                           hintText: 'Cost',
-                          suffixText: 'k',
+                          prefixText: businessConfig.isPrefix ? businessConfig.currencySymbol : null,
+                          suffixText: !businessConfig.isPrefix ? businessConfig.currencySymbol : null,
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
@@ -215,7 +226,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
                     children: [
                       const Text('Total Expense', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       Text(
-                        '${NumberFormat.decimalPattern().format(provider.totalCost)}k',
+                        formatCurrency(provider.totalCost),
                         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.orange),
                       ),
                     ],

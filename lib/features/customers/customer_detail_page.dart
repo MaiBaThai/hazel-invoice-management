@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/customer_provider.dart';
+import '../../core/providers/invoice_provider.dart';
 import '../../data/models/invoice_model.dart';
+import '../../core/providers/settings_provider.dart';
+import '../../data/models/app_settings_model.dart';
+import '../invoice/widgets/invoice_summary_dialog.dart';
 
 class CustomerDetailPage extends StatefulWidget {
   final String customerId;
@@ -67,7 +71,7 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
           body: TabBarView(
             controller: _tabController,
             children: [
-              _buildInvoicesTab(provider),
+              _buildInvoicesTab(context, provider),
               _buildPhotosTab(provider),
             ],
           ),
@@ -76,9 +80,17 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
     );
   }
 
-  Widget _buildInvoicesTab(CustomerProvider provider) {
+  Widget _buildInvoicesTab(BuildContext context, CustomerProvider provider) {
     if (provider.customerInvoices.isEmpty) {
       return const Center(child: Text('No invoices found'));
+    }
+
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+    
+    String formatCurrency(num amount) {
+      final formatted = NumberFormat.decimalPattern().format(amount);
+      return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
     }
 
     return ListView.builder(
@@ -94,7 +106,7 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             trailing: Text(
-              '${NumberFormat.decimalPattern().format(invoice.finalTotal)}k',
+              formatCurrency(invoice.finalTotal),
               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pink),
             ),
             children: [
@@ -107,7 +119,7 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(s.serviceName),
-                            Text('${NumberFormat.decimalPattern().format(s.price)}k'),
+                            Text(formatCurrency(s.price)),
                           ],
                         )),
                     const Divider(),
@@ -152,10 +164,28 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
                         child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                       )
                     else
-                      TextButton.icon(
-                        onPressed: () => provider.uploadPhotoForInvoice(invoice.id, widget.customerId),
-                        icon: const Icon(Icons.add_a_photo),
-                        label: const Text('Add Photo'),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton.icon(
+                            onPressed: () {
+                              final invoiceProvider = context.read<InvoiceProvider>();
+                              final customer = provider.selectedCustomer!;
+                              invoiceProvider.loadInvoiceForEditing(invoice, customer);
+                              showDialog(
+                                context: context,
+                                builder: (_) => const InvoiceSummaryDialog(),
+                              );
+                            },
+                            icon: const Icon(Icons.receipt_long),
+                            label: const Text('View Receipt'),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => provider.uploadPhotoForInvoice(invoice.id, widget.customerId),
+                            icon: const Icon(Icons.add_a_photo),
+                            label: const Text('Add Photo'),
+                          ),
+                        ],
                       ),
                   ],
                 ),

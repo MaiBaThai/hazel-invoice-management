@@ -10,6 +10,8 @@ import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:js' as js;
+import '../../../main.dart';
+import '../../../data/models/app_settings_model.dart';
 
 class InvoiceSummaryDialog extends StatefulWidget {
   const InvoiceSummaryDialog({super.key});
@@ -77,8 +79,14 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
     final provider = Provider.of<InvoiceProvider>(context);
     final settingsProvider = Provider.of<SettingsProvider>(context);
     final bankConfig = settingsProvider.settings?.bankConfig;
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
     
     final currencyFormat = NumberFormat.decimalPattern();
+    
+    String formatCurrency(num amount) {
+      final formatted = currencyFormat.format(amount);
+      return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
+    }
     
     // Extract short bank code for vietqr (e.g., 'MB Bank' -> 'MB')
     // A robust app would use a proper list of BINs, but here we simplify:
@@ -90,11 +98,10 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
     
     final bool hasBankInfo = bankId.isNotEmpty && accountNo.isNotEmpty;
     
-    final double amountInVnd = provider.finalTotal * 1000;
     final String description = 'NMS ${provider.selectedCustomer?.name ?? ''}'.trim();
     
     // vietqr.io expects the bank BIN or short code (like 'MB', 'TCB', 'VCB')
-    final String qrUrl = 'https://img.vietqr.io/image/$bankId-$accountNo-compact.png?amount=${amountInVnd.toInt()}&addInfo=$description&accountName=$accountName';
+    final String qrUrl = 'https://img.vietqr.io/image/$bankId-$accountNo-compact.png?addInfo=$description&accountName=$accountName';
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -136,7 +143,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                         Center(
                           child: Column(
                             children: [
-                              const Text('HAZEL NAILS STUDIO', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                              Text(businessConfig.businessName.toUpperCase(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2)),
                               Text(DateFormat('dd/MM/yyyy - HH:mm').format(DateTime.now()), style: const TextStyle(fontSize: 10, color: Colors.grey)),
                               const SizedBox(height: 16),
                               const Text('INVOICE', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.black)),
@@ -172,7 +179,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(child: Text(s.serviceName, style: const TextStyle(fontSize: 14))),
-                              Text('${currencyFormat.format(s.price)}k', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text(formatCurrency(s.price), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                             ],
                           ),
                         )),
@@ -192,7 +199,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text('Subtotal', style: TextStyle(color: Colors.grey)),
-                                  Text('${currencyFormat.format(provider.subtotal)}k'),
+                                  Text(formatCurrency(provider.subtotal)),
                                 ],
                               ),
                               if (provider.discountPercent > 0) ...[
@@ -201,7 +208,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text('Discount (${provider.discountPercent}%)', style: const TextStyle(color: Colors.red)),
-                                    Text('-${currencyFormat.format(provider.subtotal * provider.discountPercent / 100)}k', style: const TextStyle(color: Colors.red)),
+                                    Text('-${formatCurrency(provider.subtotal * provider.discountPercent / 100)}', style: const TextStyle(color: Colors.red)),
                                   ],
                                 ),
                               ],
@@ -210,7 +217,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                                  Text('${currencyFormat.format(provider.finalTotal)}k', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.pink)),
+                                  Text(formatCurrency(provider.finalTotal), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.pink)),
                                 ],
                               ),
                             ],
@@ -220,7 +227,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                         const SizedBox(height: 32),
                         
                         // Payment QR
-                        if (hasBankInfo) ...[
+                        if (hasBankInfo && businessConfig.enableVietQR) ...[
                           Center(
                             child: Column(
                               children: [
@@ -242,8 +249,8 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                           ),
                           const SizedBox(height: 16),
                         ],
-                        const Center(
-                          child: Text('--- Thank you for choosing Hazel Nails ---', style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Colors.grey)),
+                        Center(
+                          child: Text('--- Thank you for choosing ${businessConfig.businessName} ---', style: const TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Colors.grey)),
                         ),
                       ],
                     ),
@@ -259,7 +266,13 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        if (provider.isEditing) {
+                          Navigator.popUntil(context, (route) => route.isFirst);
+                          mainNavKey.currentState?.switchTab(0);
+                        }
+                      },
                       child: const Text('EDIT'),
                     ),
                   ),
@@ -284,7 +297,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                       ),
                       child: provider.isSaving 
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('CONFIRM & SAVE'),
+                        : Text(provider.isEditing ? 'UPDATE INVOICE' : 'CONFIRM & SAVE'),
                     ),
                   ),
                 ],

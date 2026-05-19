@@ -10,6 +10,7 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-003**: As a user, I want to apply a discount percentage to the total invoice amount.
 - [x] **STORY-004**: As a user, I want to save invoices to Firestore and have the customer's `total_spent` updated automatically.
 - [x] **STORY-005**: As a user, I want to see a beautiful summary view of the invoice with a payment QR code and an option to save as image.
+- [x] **STORY-027**: As a user, I want to view, download, and edit past invoices directly from the customer's history, with automatic `total_spent` adjustments.
 
 ## Epic 2: Reporting & Dashboard
 *Goal: Provide insights into business performance.*
@@ -24,6 +25,10 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] Story 2: As a user, I want to configure my bank account for VietQR generation dynamically.
 - [x] Story 3: As a user, I want to manage a predefined list of services (Service Menu) for quick entry.
 - [x] Story 4: As a user, I want quick-add chips in the invoice tab to speed up entry.
+- [x] **STORY-028**: As a user, I want to permanently delete all my data while remaining logged in, ensuring my privacy and allowing me to start fresh.
+- [x] **STORY-029**: As a user, I want to configure my business name and currency options (k or $) to localize the app branding and pricing.
+- [x] **STORY-030**: As a user, I want to receive a confirmation warning when changing currency settings, explaining that historical invoices are not mathematically converted.
+
 
 ## Epic 4: PWA & Platform Optimization
 *Goal: Ensure high-quality experience across devices.*
@@ -46,6 +51,40 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-020**: As a user, I want to record expenses with itemized descriptions and costs.
 - [x] **STORY-021**: As a user, I want quick-add categories (Rent, Supplies, Utilities) to speed up expense entry.
 - [x] **STORY-022**: As a user, I want to see the impact of expenses on my daily/monthly profit on the Dashboard.
+
+## Epic 7: Multi-User & Security [DONE]
+*Goal: Implement secure user authentication and data isolation.*
+
+- [x] **STORY-023**: As a user, I want to use the app immediately as a guest without creating an account.
+- [x] **STORY-024**: As a user, I want to sign in with my Google account to save my data permanently.
+- [x] **STORY-025**: As a user, I want my data to be securely isolated from other users.
+- [x] **STORY-026**: As an admin, I want to backup and restore legacy data to specific user accounts.
+
+## Changelogs - May 19, 2026
+### v1.6.1 - Optional VietQR Prefill Amount (2026-05-19)
+- **VietQR Transfer Amount**: Removed the prefilled transaction amount from generated VietQR codes on invoices, allowing customers to manually enter the amount in their banking apps (addressing restrictions in certain bank apps).
+
+### v1.6.0 - Business Profile & Global Currency Localization (2026-05-19)
+- **Business Profile**: Added a "Business Profile" configuration card to modify the business name and currency options.
+- **Branding & Localization**: Replaced hardcoded "Hazel Nails" default text and currency symbols ("k" VND) with dynamic variables dynamically fetched from `app_settings` via `SettingsProvider`.
+- **Conditional VietQR**: Dynamically disables the VietQR settings card and invoice QR code rendering when switching to foreign currencies like `$ (USD)`.
+- **Currency Settings Confirmation**: Implemented a warning pop-up dialog when changing currency settings to prevent unintended side effects on past invoices.
+
+## Changelogs - May 16, 2026
+### v1.5.2 - Data Deletion & UX Polish (2026-05-16)
+- **Data Privacy**: Implemented a secure "Danger Zone" allowing users to permanently delete all their data (Firestore & Storage) while generating an automatic backup.
+- **Session Management**: Optimized the deletion flow to keep users logged in, seamlessly resetting the app state to a clean slate without requiring re-authentication.
+
+## Changelogs - May 13, 2026
+### v1.5.1 - Invoice Editing & History Polish (2026-05-13)
+- **Edit History**: Added the ability to open, view, edit, and re-download historical invoices directly from the Customer Detail page.
+- **Data Integrity**: Implemented transactional logic to recalculate and update a customer's `total_spent` automatically when an old invoice is edited.
+
+## Changelogs - May 10, 2026
+### v1.5.0 - Multi-User, Security & Migration (2026-05-10)
+- **Official Release**: Transitioned from beta to official release.
+- **Migration**: Manual JSON workflow for data migration from global to user-scoped collections.
+- **Production Deployment**: Scoped database logic and security rules deployed to production.
 
 ## Changelogs - May 4, 2026
 ### v1.5.0-beta - Auth Stabilization & Security (2026-05-04)

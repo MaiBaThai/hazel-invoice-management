@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../../core/providers/settings_provider.dart';
+import '../../../data/models/app_settings_model.dart';
 import '../../../data/models/invoice_model.dart';
 
 class InvoiceDetailView extends StatelessWidget {
@@ -16,6 +19,14 @@ class InvoiceDetailView extends StatelessWidget {
   Widget build(BuildContext context) {
     final format = NumberFormat.decimalPattern();
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
+
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+
+    String formatCurrency(num amount) {
+      final formatted = format.format(amount);
+      return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
+    }
 
     return Column(
       children: [
@@ -63,7 +74,7 @@ class InvoiceDetailView extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${format.format(invoice.finalTotal)}k',
+                    formatCurrency(invoice.finalTotal),
                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pink, fontSize: 28),
                   ),
                 ],
@@ -78,7 +89,7 @@ class InvoiceDetailView extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(child: Text(s.serviceName, style: const TextStyle(fontSize: 17))),
-                        Text('${format.format(s.price)}k', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+                        Text(formatCurrency(s.price), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
                       ],
                     ),
                   )),

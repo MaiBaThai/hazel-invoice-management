@@ -3,6 +3,9 @@ import '../../../data/models/invoice_model.dart';
 import '../../../data/models/expense_model.dart';
 import '../../invoice/widgets/invoice_detail_view.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../../core/providers/settings_provider.dart';
+import '../../../data/models/app_settings_model.dart';
 
 class DailyDetailsDialog extends StatelessWidget {
   final List<Invoice> invoices;
@@ -18,7 +21,14 @@ class DailyDetailsDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final format = NumberFormat.decimalPattern();
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+    
+    String formatCurrency(num amount) {
+      final formatted = NumberFormat.decimalPattern().format(amount);
+      return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
+    }
+
     final totalRevenue = invoices.fold(0.0, (sum, item) => sum + item.finalTotal);
     final totalExpenses = expenses.fold(0.0, (sum, item) => sum + item.totalCost);
     final netProfit = totalRevenue - totalExpenses;
@@ -63,13 +73,13 @@ class DailyDetailsDialog extends StatelessWidget {
               Expanded(
                 child: TabBarView(
                   children: [
-                    _buildInvoicesList(context),
-                    _buildExpensesList(context),
+                    _buildInvoicesList(context, formatCurrency),
+                    _buildExpensesList(context, formatCurrency),
                   ],
                 ),
               ),
               const Divider(height: 1),
-              _buildBottomSummary(format, totalRevenue, totalExpenses, netProfit),
+              _buildBottomSummary(formatCurrency, totalRevenue, totalExpenses, netProfit),
             ],
           ),
         ),
@@ -77,7 +87,7 @@ class DailyDetailsDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildInvoicesList(BuildContext context) {
+  Widget _buildInvoicesList(BuildContext context, String Function(num) formatCurrency) {
     if (invoices.isEmpty) return const Center(child: Text('No invoices recorded', style: TextStyle(color: Colors.grey)));
     
     return ListView.separated(
@@ -123,7 +133,7 @@ class DailyDetailsDialog extends StatelessWidget {
                     ],
                   ),
                 ),
-                Text('${NumberFormat.decimalPattern().format(invoice.finalTotal)}k', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pink)),
+                Text(formatCurrency(invoice.finalTotal), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pink)),
               ],
             ),
           ),
@@ -132,7 +142,7 @@ class DailyDetailsDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildExpensesList(BuildContext context) {
+  Widget _buildExpensesList(BuildContext context, String Function(num) formatCurrency) {
     if (expenses.isEmpty) return const Center(child: Text('No expenses recorded', style: TextStyle(color: Colors.grey)));
 
     return ListView.separated(
@@ -150,7 +160,7 @@ class DailyDetailsDialog extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(DateFormat('HH:mm').format(expense.createdAt), style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                  Text('${NumberFormat.decimalPattern().format(expense.totalCost)}k', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+                  Text(formatCurrency(expense.totalCost), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
                 ],
               ),
               const SizedBox(height: 4),
@@ -161,7 +171,7 @@ class DailyDetailsDialog extends StatelessWidget {
                     const Icon(Icons.subdirectory_arrow_right, size: 12, color: Colors.grey),
                     const SizedBox(width: 4),
                     Expanded(child: Text(item.description, style: const TextStyle(fontSize: 13))),
-                    Text('${NumberFormat.decimalPattern().format(item.cost)}k', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                    Text(formatCurrency(item.cost), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                   ],
                 ),
               )).toList(),
@@ -177,7 +187,7 @@ class DailyDetailsDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomSummary(NumberFormat format, double revenue, double expenses, double profit) {
+  Widget _buildBottomSummary(String Function(num) formatCurrency, double revenue, double expenses, double profit) {
     final isProfit = profit >= 0;
     final color = isProfit ? Colors.green : Colors.red;
 
@@ -193,7 +203,7 @@ class DailyDetailsDialog extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Daily Revenue', style: TextStyle(fontSize: 13, color: Colors.grey)),
-              Text('${format.format(revenue)}k', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(formatCurrency(revenue), style: const TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 4),
@@ -201,7 +211,7 @@ class DailyDetailsDialog extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Daily Expenses', style: TextStyle(fontSize: 13, color: Colors.grey)),
-              Text('-${format.format(expenses)}k', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+              Text('-${formatCurrency(expenses)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
             ],
           ),
           const Divider(height: 16),
@@ -210,7 +220,7 @@ class DailyDetailsDialog extends StatelessWidget {
             children: [
               const Text('Net Profit', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               Text(
-                '${isProfit ? "+" : ""}${format.format(profit)}k',
+                '${isProfit ? "+" : ""}${formatCurrency(profit)}',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
               ),
             ],

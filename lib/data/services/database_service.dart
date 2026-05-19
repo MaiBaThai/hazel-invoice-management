@@ -44,25 +44,26 @@ class DatabaseService {
   }
 
   // --- Scoped References ---
-
+  // If userId is null, we point to a non-existent 'guests/null' path to prevent
+  // accidental leakage or fetching of global legacy data during state transitions.
   CollectionReference get _customersRef => userId == null 
-      ? _db.collection('customers') 
+      ? _db.collection('guests').doc('null').collection('customers') 
       : _db.collection('users').doc(userId).collection('customers');
 
   CollectionReference get _invoicesRef => userId == null 
-      ? _db.collection('invoices') 
+      ? _db.collection('guests').doc('null').collection('invoices') 
       : _db.collection('users').doc(userId).collection('invoices');
 
   CollectionReference get _expensesRef => userId == null 
-      ? _db.collection('expenses') 
+      ? _db.collection('guests').doc('null').collection('expenses') 
       : _db.collection('users').doc(userId).collection('expenses');
 
   DocumentReference get _settingsRef => userId == null 
-      ? _db.collection('configs').doc('app_settings')
+      ? _db.collection('guests').doc('null').collection('configs').doc('app_settings')
       : _db.collection('users').doc(userId).collection('configs').doc('app_settings');
 
-  Reference get _storageRoot => userId == null
-      ? _storage.ref()
+  Reference get storageRoot => userId == null
+      ? _storage.ref().child('guests/null')
       : _storage.ref().child('users/$userId');
 
   // --- Customers ---
@@ -174,6 +175,31 @@ class DatabaseService {
     return invoiceId;
   }
 
+  Future<void> updateInvoice(String invoiceId, Invoice newInvoice, double originalTotal) async {
+    final invoiceRef = _invoicesRef.doc(invoiceId);
+
+    await _db.runTransaction((transaction) async {
+      // 1. Verify Customer exists
+      final customerRef = _customersRef.doc(newInvoice.customerId);
+      final customerDoc = await transaction.get(customerRef);
+      
+      if (!customerDoc.exists) {
+        throw Exception('Customer with ID ${newInvoice.customerId} does not exist. They may have been deleted.');
+      }
+
+      // 2. Update Invoice Document
+      transaction.update(invoiceRef, newInvoice.toMap());
+
+      // 3. Update Customer Total Spent (compute difference)
+      final difference = newInvoice.finalTotal - originalTotal;
+      if (difference != 0) {
+        transaction.update(customerRef, {
+          'total_spent': FieldValue.increment(difference),
+        });
+      }
+    });
+  }
+
   Future<void> setInvoice(String id, Invoice invoice) async {
     await _invoicesRef.doc(id).set(invoice.toMap());
   }
@@ -185,9 +211,9 @@ class DatabaseService {
     // Logic: if userId is null, it goes to 'customers/...', if not it goes to 'users/uid/customers/...'
     final path = userId == null 
         ? 'customers/$customerId/invoices/$invoiceId/$fileName'
-        : 'customers/$customerId/invoices/$invoiceId/$fileName'; // _storageRoot already handles prefix
+        : 'customers/$customerId/invoices/$invoiceId/$fileName'; // storageRoot already handles prefix
     
-    final ref = _storageRoot.child(path);
+    final ref = storageRoot.child(path);
     
     final metadata = SettableMetadata(
       contentType: 'image/jpeg',

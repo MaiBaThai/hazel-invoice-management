@@ -9,8 +9,9 @@ class InvoiceProvider extends ChangeNotifier {
   InvoiceProvider(this._dbService);
 
   void updateDbService(DatabaseService newService) {
+    debugPrint('InvoiceProvider: updateDbService called with userId: ${newService.userId}');
     _dbService = newService;
-    notifyListeners();
+    reset(); // Clear local state when user identity potentially changes
   }
 
   Customer? _selectedCustomer;
@@ -18,6 +19,12 @@ class InvoiceProvider extends ChangeNotifier {
   double _discountPercent = 0;
   bool _isSaving = false;
   int _resetCounter = 0; // Used to force UI refresh
+
+  // Edit state variables
+  String? _editingInvoiceId;
+  double _originalTotal = 0;
+  List<String> _editingPhotoUrls = [];
+  DateTime? _editingCreatedAt;
 
   List<Customer> _searchResults = [];
   bool _isSearching = false;
@@ -36,7 +43,9 @@ class InvoiceProvider extends ChangeNotifier {
   List<ServiceItem> get services => _services;
   double get discountPercent => _discountPercent;
   bool get isSaving => _isSaving;
+  bool get hasLoadedCustomers => _hasLoadedCustomers;
   int get resetCounter => _resetCounter;
+  bool get isEditing => _editingInvoiceId != null;
   List<Customer> get searchResults => _searchResults;
   bool get isSearching => _isSearching;
 
@@ -190,6 +199,19 @@ class InvoiceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void loadInvoiceForEditing(Invoice invoice, Customer customer) {
+    _editingInvoiceId = invoice.id;
+    _originalTotal = invoice.finalTotal;
+    _editingPhotoUrls = List.from(invoice.photoUrls);
+    _editingCreatedAt = invoice.createdAt;
+
+    _selectedCustomer = customer;
+    _services = List.from(invoice.services);
+    _discountPercent = invoice.discountPercent;
+    
+    notifyListeners();
+  }
+
   // Action
   Future<String?> saveInvoice(BuildContext context) async {
     if (_selectedCustomer == null) {
@@ -211,25 +233,33 @@ class InvoiceProvider extends ChangeNotifier {
 
     try {
       final invoice = Invoice(
-        id: '',
+        id: _editingInvoiceId ?? '',
         customerId: _selectedCustomer!.id,
         customerName: _selectedCustomer!.name,
         services: _services.where((s) => s.serviceName.isNotEmpty).toList(),
         subtotal: subtotal,
         discountPercent: _discountPercent,
         finalTotal: finalTotal,
-        photoUrls: [],
-        createdAt: DateTime.now(),
+        photoUrls: _editingInvoiceId != null ? _editingPhotoUrls : [],
+        createdAt: _editingCreatedAt ?? DateTime.now(),
       );
 
-      final invoiceId = await _dbService.saveInvoice(invoice);
-      
-      // We don't reset() immediately here because we might need _selectedCustomer for the photo upload popup
-      
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invoice saved successfully!')),
-        );
+      String? invoiceId;
+      if (_editingInvoiceId != null) {
+        await _dbService.updateInvoice(_editingInvoiceId!, invoice, _originalTotal);
+        invoiceId = _editingInvoiceId;
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Invoice updated successfully!')),
+          );
+        }
+      } else {
+        invoiceId = await _dbService.saveInvoice(invoice);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Invoice saved successfully!')),
+          );
+        }
       }
       return invoiceId;
     } catch (e) {
@@ -258,6 +288,10 @@ class InvoiceProvider extends ChangeNotifier {
     _discountPercent = 0;
     _searchResults = [];
     _hasLoadedCustomers = false; // Reset cache to get fresh data on next search
+    _editingInvoiceId = null;
+    _originalTotal = 0;
+    _editingPhotoUrls = [];
+    _editingCreatedAt = null;
     _resetCounter++;
     notifyListeners();
   }

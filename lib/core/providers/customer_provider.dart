@@ -13,8 +13,19 @@ class CustomerProvider extends ChangeNotifier {
   CustomerProvider(this._dbService);
 
   void updateDbService(DatabaseService newService) {
+    debugPrint('CustomerProvider: updateDbService called with userId: ${newService.userId}');
     _dbService = newService;
-    loadCustomers();
+    _allCustomers = [];
+    _searchResults = [];
+    _selectedCustomer = null;
+    _customerInvoices = [];
+    
+    // Only load if we have a valid userId
+    if (newService.userId != null) {
+      loadCustomers();
+    } else {
+      notifyListeners(); // Ensure UI knows we are empty
+    }
   }
 
   List<Customer> _allCustomers = [];

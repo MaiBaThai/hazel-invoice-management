@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/dashboard_provider.dart';
+import '../../core/providers/settings_provider.dart';
+import '../../data/models/app_settings_model.dart';
 import 'widgets/daily_details_dialog.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -24,6 +26,13 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DashboardProvider>(context);
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+    
+    String formatCurrency(num amount) {
+      final formatted = NumberFormat.decimalPattern().format(amount);
+      return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -48,19 +57,20 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     const Text('Revenue Overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
                     const SizedBox(height: 12),
-                    _buildRevenueCards(provider),
+                    const SizedBox(height: 12),
+                    _buildRevenueCards(provider, formatCurrency),
                     const SizedBox(height: 24),
                     const Text('Expenses Overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
                     const SizedBox(height: 12),
-                    _buildExpenseCards(provider),
+                    _buildExpenseCards(provider, formatCurrency),
                     const SizedBox(height: 24),
-                    _buildProfitCard(provider),
+                    _buildProfitCard(provider, formatCurrency),
                     const SizedBox(height: 32),
                     const Text('Last 7 Days Performance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     const Text('Revenue vs Expenses', style: TextStyle(fontSize: 12, color: Colors.grey)),
                     const SizedBox(height: 16),
-                    _buildChart(provider),
+                    _buildChart(provider, formatCurrency),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -69,34 +79,31 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildRevenueCards(DashboardProvider provider) {
-    final format = NumberFormat.decimalPattern();
+  Widget _buildRevenueCards(DashboardProvider provider, String Function(num) formatCurrency) {
     return Row(
       children: [
-        Expanded(child: _SummaryCard(title: 'Today', amount: '${format.format(provider.todayRevenue)}k', color: Colors.pink)),
+        Expanded(child: _SummaryCard(title: 'Today', amount: formatCurrency(provider.todayRevenue), color: Colors.pink)),
         const SizedBox(width: 8),
-        Expanded(child: _SummaryCard(title: 'This Month', amount: '${format.format(provider.monthRevenue)}k', color: Colors.pink)),
+        Expanded(child: _SummaryCard(title: 'This Month', amount: formatCurrency(provider.monthRevenue), color: Colors.pink)),
         const SizedBox(width: 8),
-        Expanded(child: _SummaryCard(title: 'This Year', amount: '${format.format(provider.yearRevenue)}k', color: Colors.pink)),
+        Expanded(child: _SummaryCard(title: 'This Year', amount: formatCurrency(provider.yearRevenue), color: Colors.pink)),
       ],
     );
   }
 
-  Widget _buildExpenseCards(DashboardProvider provider) {
-    final format = NumberFormat.decimalPattern();
+  Widget _buildExpenseCards(DashboardProvider provider, String Function(num) formatCurrency) {
     return Row(
       children: [
-        Expanded(child: _SummaryCard(title: 'Today', amount: '${format.format(provider.todayExpenses)}k', color: Colors.orange)),
+        Expanded(child: _SummaryCard(title: 'Today', amount: formatCurrency(provider.todayExpenses), color: Colors.orange)),
         const SizedBox(width: 8),
-        Expanded(child: _SummaryCard(title: 'This Month', amount: '${format.format(provider.monthExpenses)}k', color: Colors.orange)),
+        Expanded(child: _SummaryCard(title: 'This Month', amount: formatCurrency(provider.monthExpenses), color: Colors.orange)),
         const SizedBox(width: 8),
-        Expanded(child: _SummaryCard(title: 'This Year', amount: '${format.format(provider.yearExpenses)}k', color: Colors.orange)),
+        Expanded(child: _SummaryCard(title: 'This Year', amount: formatCurrency(provider.yearExpenses), color: Colors.orange)),
       ],
     );
   }
 
-  Widget _buildProfitCard(DashboardProvider provider) {
-    final format = NumberFormat.decimalPattern();
+  Widget _buildProfitCard(DashboardProvider provider, String Function(num) formatCurrency) {
     final profit = provider.monthProfit;
     final isProfit = profit >= 0;
     final color = isProfit ? Colors.green : Colors.red;
@@ -117,7 +124,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            '${isProfit ? "+" : ""}${format.format(profit)}k',
+            '${isProfit ? "+" : ""}${formatCurrency(profit)}',
             style: TextStyle(color: color, fontSize: 32, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
@@ -149,7 +156,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildChart(DashboardProvider provider) {
+  Widget _buildChart(DashboardProvider provider, String Function(num) formatCurrency) {
     final revenueData = provider.last7DaysRevenue;
     final expenseData = provider.last7DaysExpenses;
     
@@ -178,7 +185,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
                     final isRevenue = rodIndex == 0;
                     return BarTooltipItem(
-                      '${isRevenue ? "Revenue" : "Expense"}\n${NumberFormat.decimalPattern().format(rod.toY)}k',
+                      '${isRevenue ? "Revenue" : "Expense"}\n${formatCurrency(rod.toY)}',
                       TextStyle(color: rod.color, fontWeight: FontWeight.bold),
                     );
                   },

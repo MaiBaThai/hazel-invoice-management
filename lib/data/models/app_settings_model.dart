@@ -1,5 +1,32 @@
 import 'package:nms/data/models/invoice_model.dart';
 
+class BusinessConfig {
+  final String businessName;
+  final String currencySymbol; // 'k' or '$'
+
+  BusinessConfig({
+    required this.businessName,
+    required this.currencySymbol,
+  });
+
+  bool get isPrefix => currencySymbol == '\$';
+  bool get enableVietQR => currencySymbol == 'k';
+
+  factory BusinessConfig.fromMap(Map<String, dynamic> map) {
+    return BusinessConfig(
+      businessName: map['business_name'] ?? 'Hazel Nails',
+      currencySymbol: map['currency_symbol'] ?? 'k',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'business_name': businessName,
+      'currency_symbol': currencySymbol,
+    };
+  }
+}
+
 class BankConfig {
   final String bankName;
   final String accountNumber;
@@ -29,16 +56,19 @@ class BankConfig {
 }
 
 class AppSettings {
+  final BusinessConfig businessConfig;
   final BankConfig bankConfig;
   final List<ServiceItem> predefinedServices;
 
   AppSettings({
+    required this.businessConfig,
     required this.bankConfig,
     required this.predefinedServices,
   });
 
   factory AppSettings.fromMap(Map<String, dynamic> map) {
     return AppSettings(
+      businessConfig: BusinessConfig.fromMap(map['business_config'] ?? {}),
       bankConfig: BankConfig.fromMap(map['bank_config'] ?? {}),
       predefinedServices: (map['predefined_services'] as List? ?? [])
           .map((s) => ServiceItem.fromMap(s as Map<String, dynamic>))
@@ -48,6 +78,7 @@ class AppSettings {
 
   Map<String, dynamic> toMap() {
     return {
+      'business_config': businessConfig.toMap(),
       'bank_config': bankConfig.toMap(),
       'predefined_services': predefinedServices.map((s) => s.toMap()).toList(),
     };
@@ -56,6 +87,10 @@ class AppSettings {
   // Default empty settings if document doesn't exist yet
   factory AppSettings.defaultSettings() {
     return AppSettings(
+      businessConfig: BusinessConfig(
+        businessName: 'Hazel Nails',
+        currencySymbol: 'k',
+      ),
       bankConfig: BankConfig(
         bankName: '',
         accountNumber: '',
