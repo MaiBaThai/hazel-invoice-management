@@ -98,11 +98,10 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
     
     final bool hasBankInfo = bankId.isNotEmpty && accountNo.isNotEmpty;
     
-    final double amountInVnd = provider.finalTotal * 1000;
     final String description = 'NMS ${provider.selectedCustomer?.name ?? ''}'.trim();
     
     // vietqr.io expects the bank BIN or short code (like 'MB', 'TCB', 'VCB')
-    final String qrUrl = 'https://img.vietqr.io/image/$bankId-$accountNo-compact.png?amount=${amountInVnd.toInt()}&addInfo=$description&accountName=$accountName';
+    final String qrUrl = 'https://img.vietqr.io/image/$bankId-$accountNo-compact.png?addInfo=$description&accountName=$accountName';
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

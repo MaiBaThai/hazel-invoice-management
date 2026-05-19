@@ -61,6 +61,9 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-026**: As an admin, I want to backup and restore legacy data to specific user accounts.
 
 ## Changelogs - May 19, 2026
+### v1.6.1 - Optional VietQR Prefill Amount (2026-05-19)
+- **VietQR Transfer Amount**: Removed the prefilled transaction amount from generated VietQR codes on invoices, allowing customers to manually enter the amount in their banking apps (addressing restrictions in certain bank apps).
+
 ### v1.6.0 - Business Profile & Global Currency Localization (2026-05-19)
 - **Business Profile**: Added a "Business Profile" configuration card to modify the business name and currency options.
 - **Branding & Localization**: Replaced hardcoded "Hazel Nails" default text and currency symbols ("k" VND) with dynamic variables dynamically fetched from `app_settings` via `SettingsProvider`.
