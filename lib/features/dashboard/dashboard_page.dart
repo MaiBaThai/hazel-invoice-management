@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
@@ -51,26 +52,47 @@ class _DashboardPageState extends State<DashboardPage> {
               onRefresh: () => provider.loadDashboardData(),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Revenue Overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
-                    const SizedBox(height: 12),
-                    const SizedBox(height: 12),
-                    _buildRevenueCards(provider, formatCurrency),
-                    const SizedBox(height: 24),
-                    const Text('Expenses Overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
-                    const SizedBox(height: 12),
-                    _buildExpenseCards(provider, formatCurrency),
-                    const SizedBox(height: 24),
-                    _buildProfitCard(provider, formatCurrency),
-                    const SizedBox(height: 32),
-                    const Text('Last 7 Days Performance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    const Text('Revenue vs Expenses', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    // 1. Sliding Segment Selector
+                    _buildRangeSelector(provider),
                     const SizedBox(height: 16),
+
+                    // 2. Dynamic Summary Metrics Grid
+                    _buildSummaryGrid(provider, formatCurrency),
+                    const SizedBox(height: 24),
+
+                    // 3. Performance Chart
+                    const Text('Performance Overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    const SizedBox(height: 4),
+                    Text(
+                      provider.selectedRange == DashboardRange.fourteenDays
+                          ? 'Daily Revenue vs Expenses'
+                          : provider.selectedRange == DashboardRange.ytd
+                              ? 'Monthly Revenue vs Expenses'
+                              : 'Weekly Revenue vs Expenses',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 12),
                     _buildChart(provider, formatCurrency),
+                    const SizedBox(height: 28),
+
+                    // 4. Top 3 Services Breakdown
+                    const Text('Top Services & Products', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    const SizedBox(height: 4),
+                    const Text('By total revenue and visit count', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    const SizedBox(height: 12),
+                    _buildTopServices(provider, formatCurrency),
+                    const SizedBox(height: 28),
+
+                    // 5. Busiest Days/Times Heat Map
+                    const Text('Busiest Days & Times', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    const SizedBox(height: 4),
+                    const Text('Visit volume by weekday and hour range', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    const SizedBox(height: 16),
+                    _buildHeatMap(provider),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -79,93 +101,92 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildRevenueCards(DashboardProvider provider, String Function(num) formatCurrency) {
-    return Row(
-      children: [
-        Expanded(child: _SummaryCard(title: 'Today', amount: formatCurrency(provider.todayRevenue), color: Colors.pink)),
-        const SizedBox(width: 8),
-        Expanded(child: _SummaryCard(title: 'This Month', amount: formatCurrency(provider.monthRevenue), color: Colors.pink)),
-        const SizedBox(width: 8),
-        Expanded(child: _SummaryCard(title: 'This Year', amount: formatCurrency(provider.yearRevenue), color: Colors.pink)),
-      ],
-    );
-  }
-
-  Widget _buildExpenseCards(DashboardProvider provider, String Function(num) formatCurrency) {
-    return Row(
-      children: [
-        Expanded(child: _SummaryCard(title: 'Today', amount: formatCurrency(provider.todayExpenses), color: Colors.orange)),
-        const SizedBox(width: 8),
-        Expanded(child: _SummaryCard(title: 'This Month', amount: formatCurrency(provider.monthExpenses), color: Colors.orange)),
-        const SizedBox(width: 8),
-        Expanded(child: _SummaryCard(title: 'This Year', amount: formatCurrency(provider.yearExpenses), color: Colors.orange)),
-      ],
-    );
-  }
-
-  Widget _buildProfitCard(DashboardProvider provider, String Function(num) formatCurrency) {
-    final profit = provider.monthProfit;
-    final isProfit = profit >= 0;
-    final color = isProfit ? Colors.green : Colors.red;
-
-    return Container(
+  Widget _buildRangeSelector(DashboardProvider provider) {
+    return SizedBox(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2)),
+      child: CupertinoSlidingSegmentedControl<DashboardRange>(
+        groupValue: provider.selectedRange,
+        children: const {
+          DashboardRange.fourteenDays: Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text('14 Days', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+          DashboardRange.thirtyDays: Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text('30 Days', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+          DashboardRange.ninetyDays: Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text('90 Days', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+          DashboardRange.ytd: Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text('YTD', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+        },
+        onValueChanged: (value) {
+          if (value != null) {
+            provider.selectedRange = value;
+          }
+        },
       ),
-      child: Column(
-        children: [
-          Text(
-            'MONTHLY NET PROFIT',
-            style: TextStyle(color: color.withOpacity(0.8), fontWeight: FontWeight.bold, letterSpacing: 1.2, fontSize: 12),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '${isProfit ? "+" : ""}${formatCurrency(profit)}',
-            style: TextStyle(color: color, fontSize: 32, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(isProfit ? Icons.trending_up : Icons.trending_down, color: color, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                '${provider.profitMargin.toStringAsFixed(1)}% Margin',
-                style: TextStyle(color: color, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(width: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  isProfit ? 'PROFITABLE' : 'LOSS',
-                  style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+    );
+  }
+
+  Widget _buildSummaryGrid(DashboardProvider provider, String Function(num) formatCurrency) {
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 1.5,
+      children: [
+        _SummaryCard(
+          title: 'REVENUE',
+          amount: formatCurrency(provider.periodRevenue),
+          color: Colors.pink,
+          subtitle: '${provider.periodInvoiceCount} visit${provider.periodInvoiceCount == 1 ? "" : "s"}',
+        ),
+        _SummaryCard(
+          title: 'EXPENSES',
+          amount: formatCurrency(provider.periodExpenses),
+          color: Colors.orange,
+        ),
+        _SummaryCard(
+          title: 'NET PROFIT',
+          amount: '${provider.periodNetProfit >= 0 ? "+" : ""}${formatCurrency(provider.periodNetProfit)}',
+          color: provider.periodNetProfit >= 0 ? Colors.green : Colors.red,
+          subtitle: '${provider.periodProfitMargin.toStringAsFixed(1)}% margin',
+        ),
+        _SummaryCard(
+          title: 'AVG TICKET',
+          amount: formatCurrency(provider.periodAverageTicket),
+          color: Colors.deepPurple,
+          subtitle: 'Per invoice spent',
+        ),
+      ],
     );
   }
 
   Widget _buildChart(DashboardProvider provider, String Function(num) formatCurrency) {
-    final revenueData = provider.last7DaysRevenue;
-    final expenseData = provider.last7DaysExpenses;
-    
+    final revenueData = provider.chartRevenueData;
+    final expenseData = provider.chartExpenseData;
+    final labels = provider.chartLabels;
+
     double maxY = 0;
-    for (var d in revenueData) if (d > maxY) maxY = d;
-    for (var d in expenseData) if (d > maxY) maxY = d;
-    
+    for (var d in revenueData) {
+      if (d > maxY) maxY = d;
+    }
+    for (var d in expenseData) {
+      if (d > maxY) maxY = d;
+    }
+
     maxY = maxY * 1.2;
     if (maxY == 0) maxY = 100;
+
+    final barWidth = provider.selectedRange == DashboardRange.fourteenDays ? 6.0 : 10.0;
+    final showLabelsInterval = provider.selectedRange == DashboardRange.fourteenDays ? 2 : 1;
 
     return AspectRatio(
       aspectRatio: 1.5,
@@ -174,7 +195,7 @@ class _DashboardPageState extends State<DashboardPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         color: Colors.grey.withOpacity(0.03),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+          padding: const EdgeInsets.fromLTRB(12, 20, 12, 8),
           child: BarChart(
             BarChartData(
               alignment: BarChartAlignment.spaceAround,
@@ -186,24 +207,24 @@ class _DashboardPageState extends State<DashboardPage> {
                     final isRevenue = rodIndex == 0;
                     return BarTooltipItem(
                       '${isRevenue ? "Revenue" : "Expense"}\n${formatCurrency(rod.toY)}',
-                      TextStyle(color: rod.color, fontWeight: FontWeight.bold),
+                      TextStyle(color: rod.color, fontWeight: FontWeight.bold, fontSize: 11),
                     );
                   },
                 ),
                 touchCallback: (FlTouchEvent event, barTouchResponse) {
                   if (event is FlTapUpEvent && barTouchResponse != null && barTouchResponse.spot != null) {
                     final index = barTouchResponse.spot!.touchedBarGroupIndex;
-                    final invoices = provider.dailyInvoices[index];
-                    final expenses = provider.dailyExpenses[index];
-                    final date = DateTime.now().subtract(Duration(days: 6 - index));
-                    showDialog(
-                      context: context,
-                      builder: (context) => DailyDetailsDialog(
-                        invoices: invoices,
-                        expenses: expenses,
-                        date: date,
-                      ),
-                    );
+                    if (index >= 0 && index < revenueData.length) {
+                      final details = provider.getDetailsForIndex(index);
+                      showDialog(
+                        context: context,
+                        builder: (context) => DailyDetailsDialog(
+                          invoices: details['invoices'],
+                          expenses: details['expenses'],
+                          date: details['date'],
+                        ),
+                      );
+                    }
                   }
                 },
               ),
@@ -213,14 +234,21 @@ class _DashboardPageState extends State<DashboardPage> {
                   sideTitles: SideTitles(
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
-                      final date = DateTime.now().subtract(Duration(days: 6 - value.toInt()));
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          DateFormat('d/M').format(date),
-                          style: const TextStyle(color: Colors.grey, fontSize: 10),
-                        ),
-                      );
+                      final index = value.toInt();
+                      if (index >= 0 && index < labels.length) {
+                        // Skip some labels on 14 Days to prevent overlapping
+                        if (provider.selectedRange == DashboardRange.fourteenDays && index % showLabelsInterval != 0) {
+                          return const SizedBox();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6.0),
+                          child: Text(
+                            labels[index],
+                            style: const TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.w500),
+                          ),
+                        );
+                      }
+                      return const SizedBox();
                     },
                   ),
                 ),
@@ -230,21 +258,21 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               gridData: const FlGridData(show: false),
               borderData: FlBorderData(show: false),
-              barGroups: List.generate(7, (index) {
+              barGroups: List.generate(revenueData.length, (index) {
                 return BarChartGroupData(
                   x: index,
                   barRods: [
                     BarChartRodData(
                       toY: revenueData[index],
                       color: Colors.pink,
-                      width: 8,
-                      borderRadius: const BorderRadius.only(topLeft: Radius.circular(4), topRight: Radius.circular(4)),
+                      width: barWidth,
+                      borderRadius: const BorderRadius.only(topLeft: Radius.circular(3), topRight: Radius.circular(3)),
                     ),
                     BarChartRodData(
                       toY: expenseData[index],
                       color: Colors.orange,
-                      width: 8,
-                      borderRadius: const BorderRadius.only(topLeft: Radius.circular(4), topRight: Radius.circular(4)),
+                      width: barWidth,
+                      borderRadius: const BorderRadius.only(topLeft: Radius.circular(3), topRight: Radius.circular(3)),
                     ),
                   ],
                 );
@@ -255,29 +283,292 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
     );
   }
+
+  Widget _buildTopServices(DashboardProvider provider, String Function(num) formatCurrency) {
+    final services = provider.topServices;
+    if (services.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Center(
+          child: Text('No service sales recorded in this period', style: TextStyle(color: Colors.grey, fontSize: 12)),
+        ),
+      );
+    }
+
+    final first = services.isNotEmpty ? services[0] : null;
+    final second = services.length > 1 ? services[1] : null;
+    final third = services.length > 2 ? services[2] : null;
+    final maxRevenue = first?.totalRevenue ?? 1.0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(child: _buildPodiumColumn(second, 2, maxRevenue, formatCurrency)),
+          const SizedBox(width: 8),
+          Expanded(child: _buildPodiumColumn(first, 1, maxRevenue, formatCurrency)),
+          const SizedBox(width: 8),
+          Expanded(child: _buildPodiumColumn(third, 3, maxRevenue, formatCurrency)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPodiumColumn(
+    ServiceSummary? service,
+    int rank,
+    double maxRevenue,
+    String Function(num) formatCurrency,
+  ) {
+    const double maxBarHeight = 80.0;
+    final double barHeight = service != null && maxRevenue > 0
+        ? (service.totalRevenue / maxRevenue) * maxBarHeight
+        : 8.0;
+
+    Color barColor;
+    if (rank == 1) {
+      barColor = Colors.pink;
+    } else if (rank == 2) {
+      barColor = Colors.pink.withOpacity(0.65);
+    } else {
+      barColor = Colors.pink.withOpacity(0.35);
+    }
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (service != null) ...[
+          Text(
+            formatCurrency(service.totalRevenue),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${service.count} visit${service.count == 1 ? "" : "s"}',
+            style: const TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.w500),
+            textAlign: TextAlign.center,
+          ),
+        ] else ...[
+          const Text('-', style: TextStyle(fontSize: 11, color: Colors.grey)),
+          const SizedBox(height: 2),
+          const Text('-', style: TextStyle(fontSize: 9, color: Colors.grey)),
+        ],
+        const SizedBox(height: 8),
+        Container(
+          height: barHeight,
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 45),
+          decoration: BoxDecoration(
+            color: barColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+          ),
+          child: service != null && barHeight > 24
+              ? Center(
+                  child: Text(
+                    '$rank',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              : const SizedBox(),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 32,
+          child: Text(
+            service?.name ?? 'Empty',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: service != null ? Colors.black87 : Colors.grey,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeatMap(DashboardProvider provider) {
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final timeSlots = ['9-11', '11-13', '13-15', '15-17', '17+'];
+    
+    int maxCount = 1;
+    for (var row in provider.heatMapData) {
+      for (var val in row) {
+        if (val > maxCount) maxCount = val;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Day headers (columns)
+          Row(
+            children: [
+              const SizedBox(width: 45), // spacer for time slot labels
+              ...days.map((day) => Expanded(
+                child: Center(
+                  child: Text(
+                    day,
+                    style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              )),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Time slot rows
+          ...List.generate(5, (slotIndex) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3.0),
+              child: Row(
+                children: [
+                  // Time Slot Label
+                  SizedBox(
+                    width: 45,
+                    child: Text(
+                      timeSlots[slotIndex],
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+                    ),
+                  ),
+                  // Cells (Mon-Sun)
+                  ...List.generate(7, (dayIndex) {
+                    final count = provider.heatMapData[dayIndex][slotIndex];
+                    final opacity = count == 0 ? 0.03 : 0.1 + 0.9 * (count / maxCount);
+                    final cellColor = count == 0 ? Colors.grey : Colors.pink;
+
+                    return Expanded(
+                      child: Tooltip(
+                        message: '${days[dayIndex]} at ${timeSlots[slotIndex]}: $count visit${count == 1 ? "" : "s"}',
+                        triggerMode: TooltipTriggerMode.tap,
+                        child: Container(
+                          height: 32,
+                          margin: const EdgeInsets.symmetric(horizontal: 2.0),
+                          decoration: BoxDecoration(
+                            color: cellColor.withOpacity(opacity),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: count > 0 ? Colors.pink.withOpacity(0.3) : Colors.grey.withOpacity(0.1),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: count > 0 
+                              ? Center(
+                                  child: Text(
+                                    '$count',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: opacity > 0.5 ? Colors.white : Colors.pink[800],
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox(),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 12),
+          // Legend
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              const Text('Fewer visits', style: TextStyle(fontSize: 10, color: Colors.grey)),
+              const SizedBox(width: 4),
+              ...List.generate(5, (i) {
+                return Container(
+                  width: 10,
+                  height: 10,
+                  margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                  decoration: BoxDecoration(
+                    color: Colors.pink.withOpacity(0.1 + 0.9 * (i / 4)),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                );
+              }),
+              const SizedBox(width: 4),
+              const Text('More visits', style: TextStyle(fontSize: 10, color: Colors.grey)),
+            ],
+          )
+        ],
+      ),
+    );
+  }
 }
 
 class _SummaryCard extends StatelessWidget {
   final String title;
   final String amount;
   final Color color;
+  final String? subtitle;
 
-  const _SummaryCard({required this.title, required this.amount, required this.color});
+  const _SummaryCard({
+    required this.title,
+    required this.amount,
+    required this.color,
+    this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        color: color.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withOpacity(0.15)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(title, style: TextStyle(color: color.withOpacity(0.8), fontSize: 12, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(amount, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: TextStyle(color: color.withOpacity(0.8), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.6),
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              amount,
+              style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle!,
+              style: TextStyle(color: color.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.w500),
+            ),
+          ],
         ],
       ),
     );
