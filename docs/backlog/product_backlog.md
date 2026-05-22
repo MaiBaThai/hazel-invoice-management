@@ -16,9 +16,13 @@ This document outlines the features and user stories for the NMS, prioritized fo
 *Goal: Provide insights into business performance.*
 
 - [x] **STORY-006**: As a user, I want to see total revenue stats by Day, Month, and Year.
-- [x] **STORY-007**: As a user, I want a visual bar chart showing revenue for the last 7 days.
+- [x] **STORY-007**: As a user, I want a visual bar chart showing revenue for the last 7 days (Upgraded/Expanded to trailing 14D/30D/90D/YTD charts).
 - [x] **STORY-008**: As a user, I want to search customer history by Name or Phone number.
 - [x] **STORY-009**: As a user, I want to view a chronological list of all past invoices for a specific customer.
+- [x] **STORY-031**: As a user, I want to filter my dashboard by different date ranges (14 Days daily, 30 Days weekly, 90 Days weekly, YTD monthly).
+- [x] **STORY-032**: As a user, I want to see dynamic summary cards on my dashboard, including Revenue, Expenses, Net Profit with Margin percentage, and Average Ticket Value (ATV).
+- [x] **STORY-033**: As a user, I want to see a ranking podium column chart of my top 3 services to identify high-performing services at a glance.
+- [x] **STORY-034**: As a user, I want to see a weekday vs time-slot heat map showing my busiest times to optimize schedule/staffing.
 
 ## Epic 3: Configuration & Settings [DONE]
 - [x] Story 1: As a user, I want to edit/delete customer information to maintain a clean database.
@@ -59,6 +63,14 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-024**: As a user, I want to sign in with my Google account to save my data permanently.
 - [x] **STORY-025**: As a user, I want my data to be securely isolated from other users.
 - [x] **STORY-026**: As an admin, I want to backup and restore legacy data to specific user accounts.
+
+## Changelogs - May 22, 2026
+### v1.7.0 - Advanced Salon Dashboard & Date Range Analytics (2026-05-22)
+- **Flexible Date Filtering**: Introduced a sliding segment selector for multiple date ranges (14 Days daily, 30 Days weekly, 90 Days weekly, YTD monthly) with 365 days of historical data fetching.
+- **Dynamic KPI Summary Grid**: Replaced static cards with a 2x2 grid displaying Revenue, Expenses, Net Profit with Margin percentage, and Average Ticket Value (ATV).
+- **Interactive Grouped Charting**: Updated the main bar chart to dynamically adjust bar groupings, formatting, and click-drilldown details based on the selected date range.
+- **Top 3 Services Podium**: Added a compact, Row-based vertical bar ranking podium (`[2nd, 1st, 3rd]`) showing revenue shares and visit counts for high-performing services.
+- **Busiest Days & Times Heat Map**: Integrated a 7x5 interactive heat map (weekdays vs time slots) with density shading and click/tap tooltips showing exact visit counts.
 
 ## Changelogs - May 19, 2026
 ### v1.6.1 - Optional VietQR Prefill Amount (2026-05-19)
