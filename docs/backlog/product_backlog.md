@@ -74,6 +74,7 @@ This document outlines the features and user stories for the NMS, prioritized fo
   - **Daily Details Dialog**: Displays starting time of invoice under customer name.
   - **Customer History**: Displays session times and duration for past invoice items.
 - **Precision Heatmap Analytics**: Updated the "Busiest Days & Times" dashboard heatmap to aggregate counts based on actual session start times (`sessionStart` with fallback to `createdAt`), maintaining `createdAt` for financial analytics.
+- **Compact Dashboard & Tabbed Analytics**: Redesigned overview metrics cards to use side-by-side title/subtitle layouts with a tight grid aspect ratio (2.3). Added a Segmented Chart View Selector (switching between Performance, Top Services, and Busiest Times) to fit the entire dashboard screen on mobile devices without scrolling.
 
 ## Changelogs - May 22, 2026
 ### v1.7.0 - Advanced Salon Dashboard & Date Range Analytics (2026-05-22)

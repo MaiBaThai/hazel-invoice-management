@@ -8,6 +8,12 @@ import '../../core/providers/settings_provider.dart';
 import '../../data/models/app_settings_model.dart';
 import 'widgets/daily_details_dialog.dart';
 
+enum DashboardChartView {
+  performance,
+  services,
+  heatmap,
+}
+
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
@@ -16,12 +22,101 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  DashboardChartView _activeChartView = DashboardChartView.performance;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<DashboardProvider>(context, listen: false).loadDashboardData();
     });
+  }
+
+  Widget _buildChartViewSelector() {
+    return SizedBox(
+      width: double.infinity,
+      child: CupertinoSlidingSegmentedControl<DashboardChartView>(
+        groupValue: _activeChartView,
+        children: const {
+          DashboardChartView.performance: Padding(
+            padding: EdgeInsets.symmetric(vertical: 6),
+            child: Text('Performance', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
+          DashboardChartView.services: Padding(
+            padding: EdgeInsets.symmetric(vertical: 6),
+            child: Text('Top Services', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
+          DashboardChartView.heatmap: Padding(
+            padding: EdgeInsets.symmetric(vertical: 6),
+            child: Text('Busiest Times', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
+        },
+        onValueChanged: (value) {
+          if (value != null) {
+            setState(() {
+              _activeChartView = value;
+            });
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildSelectedChartView(DashboardProvider provider, String Function(num) formatCurrency) {
+    switch (_activeChartView) {
+      case DashboardChartView.performance:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Performance Overview', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+                Text(
+                  provider.selectedRange == DashboardRange.fourteenDays
+                      ? 'Daily Revenue vs Expenses'
+                      : provider.selectedRange == DashboardRange.ytd
+                          ? 'Monthly Revenue vs Expenses'
+                          : 'Weekly Revenue vs Expenses',
+                  style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildChart(provider, formatCurrency),
+          ],
+        );
+      case DashboardChartView.services:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Top Services & Products', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+                Text('By revenue & visits', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildTopServices(provider, formatCurrency),
+          ],
+        );
+      case DashboardChartView.heatmap:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Busiest Days & Times', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+                Text('Volume by hour range', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildHeatMap(provider),
+          ],
+        );
+    }
   }
 
   @override
@@ -58,42 +153,19 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     // 1. Sliding Segment Selector
                     _buildRangeSelector(provider),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
 
                     // 2. Dynamic Summary Metrics Grid
                     _buildSummaryGrid(provider, formatCurrency),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
 
-                    // 3. Performance Chart
-                    const Text('Performance Overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
-                    const SizedBox(height: 4),
-                    Text(
-                      provider.selectedRange == DashboardRange.fourteenDays
-                          ? 'Daily Revenue vs Expenses'
-                          : provider.selectedRange == DashboardRange.ytd
-                              ? 'Monthly Revenue vs Expenses'
-                              : 'Weekly Revenue vs Expenses',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildChart(provider, formatCurrency),
-                    const SizedBox(height: 28),
-
-                    // 4. Top 3 Services Breakdown
-                    const Text('Top Services & Products', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
-                    const SizedBox(height: 4),
-                    const Text('By total revenue and visit count', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    const SizedBox(height: 12),
-                    _buildTopServices(provider, formatCurrency),
-                    const SizedBox(height: 28),
-
-                    // 5. Busiest Days/Times Heat Map
-                    const Text('Busiest Days & Times', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
-                    const SizedBox(height: 4),
-                    const Text('Visit volume by weekday and hour range', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    // 3. Chart View Selector
+                    _buildChartViewSelector(),
                     const SizedBox(height: 16),
-                    _buildHeatMap(provider),
-                    const SizedBox(height: 32),
+
+                    // 4. Selected Chart View
+                    _buildSelectedChartView(provider, formatCurrency),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -136,11 +208,11 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildSummaryGrid(DashboardProvider provider, String Function(num) formatCurrency) {
     return GridView.count(
       crossAxisCount: 2,
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.5,
+      childAspectRatio: 2.3,
       children: [
         _SummaryCard(
           title: 'REVENUE',
@@ -152,18 +224,19 @@ class _DashboardPageState extends State<DashboardPage> {
           title: 'EXPENSES',
           amount: formatCurrency(provider.periodExpenses),
           color: Colors.orange,
+          subtitle: 'total cost',
         ),
         _SummaryCard(
           title: 'NET PROFIT',
           amount: '${provider.periodNetProfit >= 0 ? "+" : ""}${formatCurrency(provider.periodNetProfit)}',
           color: provider.periodNetProfit >= 0 ? Colors.green : Colors.red,
-          subtitle: '${provider.periodProfitMargin.toStringAsFixed(1)}% margin',
+          subtitle: '${provider.periodProfitMargin.toStringAsFixed(0)}% margin',
         ),
         _SummaryCard(
           title: 'AVG TICKET',
           amount: formatCurrency(provider.periodAverageTicket),
           color: Colors.deepPurple,
-          subtitle: 'Per invoice spent',
+          subtitle: 'per invoice',
         ),
       ],
     );
@@ -540,35 +613,51 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.15)),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            title,
-            style: TextStyle(color: color.withOpacity(0.8), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: color.withOpacity(0.8),
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.4,
+                ),
+              ),
+              if (subtitle != null)
+                Text(
+                  subtitle!,
+                  style: TextStyle(
+                    color: color.withOpacity(0.55),
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 2),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               amount,
-              style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: color,
+                fontSize: 15.5,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              subtitle!,
-              style: TextStyle(color: color.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.w500),
-            ),
-          ],
         ],
       ),
     );
