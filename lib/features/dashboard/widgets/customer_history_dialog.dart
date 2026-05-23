@@ -205,10 +205,17 @@ class _InvoiceTile extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                dateFormat.format(invoice.createdAt),
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
+              if (invoice.sessionStart != null && invoice.sessionEnd != null) ...[
+                Text(
+                  '${DateFormat('dd/MM/yyyy').format(invoice.sessionStart!)} (${DateFormat('HH:mm').format(invoice.sessionStart!)} - ${DateFormat('HH:mm').format(invoice.sessionEnd!)})',
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ] else ...[
+                Text(
+                  dateFormat.format(invoice.createdAt),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ],
               Text(
                 formatCurrency(invoice.finalTotal),
                 style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pink, fontSize: 16),

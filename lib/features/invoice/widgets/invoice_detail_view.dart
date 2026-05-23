@@ -69,7 +69,26 @@ class InvoiceDetailView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(invoice.customerName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                        Text(dateFormat.format(invoice.createdAt), style: const TextStyle(color: Colors.grey)),
+                        const SizedBox(height: 4),
+                        if (invoice.sessionStart != null && invoice.sessionEnd != null) ...[
+                          Text(
+                            () {
+                              final start = invoice.sessionStart!;
+                              final end = invoice.sessionEnd!;
+                              final diffMinutes = end.difference(start).inMinutes;
+                              final hours = diffMinutes / 60.0;
+                              final formattedHours = hours.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+                              final durationText = '($formattedHours hr${hours == 1 ? '' : 's'})';
+                              final dateStr = DateFormat('dd/MM/yyyy').format(start);
+                              final startStr = DateFormat('HH:mm').format(start);
+                              final endStr = DateFormat('HH:mm').format(end);
+                              return '$dateStr  $startStr - $endStr $durationText';
+                            }(),
+                            style: const TextStyle(color: Colors.grey, fontSize: 13),
+                          ),
+                        ] else ...[
+                          Text(dateFormat.format(invoice.createdAt), style: const TextStyle(color: Colors.grey)),
+                        ],
                       ],
                     ),
                   ),

@@ -129,7 +129,10 @@ class DailyDetailsDialog extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(invoice.customerName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text(DateFormat('HH:mm').format(invoice.createdAt), style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text(
+                        DateFormat('HH:mm').format(invoice.sessionStart ?? invoice.createdAt),
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
                     ],
                   ),
                 ),

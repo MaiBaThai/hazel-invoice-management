@@ -31,6 +31,8 @@ class Invoice {
   final double finalTotal;
   final List<String> photoUrls;
   final DateTime createdAt;
+  final DateTime? sessionStart;
+  final DateTime? sessionEnd;
 
   Invoice({
     required this.id,
@@ -42,6 +44,8 @@ class Invoice {
     required this.finalTotal,
     required this.photoUrls,
     required this.createdAt,
+    this.sessionStart,
+    this.sessionEnd,
   });
 
   factory Invoice.fromMap(String id, Map<String, dynamic> map) {
@@ -57,6 +61,8 @@ class Invoice {
       finalTotal: (map['final_total'] ?? 0.0).toDouble(),
       photoUrls: List<String>.from(map['photoUrls'] ?? map['photo_urls'] ?? []),
       createdAt: (map['created_at'] as Timestamp).toDate(),
+      sessionStart: map['session_start'] != null ? (map['session_start'] as Timestamp).toDate() : null,
+      sessionEnd: map['session_end'] != null ? (map['session_end'] as Timestamp).toDate() : null,
     );
   }
 
@@ -70,6 +76,8 @@ class Invoice {
       'final_total': finalTotal,
       'photoUrls': photoUrls,
       'created_at': Timestamp.fromDate(createdAt),
+      'session_start': sessionStart != null ? Timestamp.fromDate(sessionStart!) : null,
+      'session_end': sessionEnd != null ? Timestamp.fromDate(sessionEnd!) : null,
     };
   }
 }

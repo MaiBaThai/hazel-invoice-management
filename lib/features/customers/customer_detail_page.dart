@@ -102,7 +102,9 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
           margin: const EdgeInsets.only(bottom: 12),
           child: ExpansionTile(
             title: Text(
-              DateFormat('dd/MM/yyyy HH:mm').format(invoice.createdAt),
+              invoice.sessionStart != null && invoice.sessionEnd != null
+                  ? '${DateFormat('dd/MM/yyyy').format(invoice.sessionStart!)} (${DateFormat('HH:mm').format(invoice.sessionStart!)} - ${DateFormat('HH:mm').format(invoice.sessionEnd!)})'
+                  : DateFormat('dd/MM/yyyy HH:mm').format(invoice.createdAt),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             trailing: Text(

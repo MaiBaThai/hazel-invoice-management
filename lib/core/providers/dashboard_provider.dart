@@ -301,9 +301,10 @@ class DashboardProvider extends ChangeNotifier {
     // 5. Calculate Weekly Heat Map data (7 days x 5 slots)
     _heatMapData = List.generate(7, (_) => List.filled(5, 0));
     for (var inv in filteredInvoices) {
-      final weekdayIndex = inv.createdAt.weekday - 1; // Monday (0) - Sunday (6)
+      final timeToUse = inv.sessionStart ?? inv.createdAt;
+      final weekdayIndex = timeToUse.weekday - 1; // Monday (0) - Sunday (6)
       if (weekdayIndex >= 0 && weekdayIndex < 7) {
-        final slotIndex = _getTimeSlotIndex(inv.createdAt.hour);
+        final slotIndex = _getTimeSlotIndex(timeToUse.hour);
         _heatMapData[weekdayIndex][slotIndex]++;
       }
     }

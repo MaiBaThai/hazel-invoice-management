@@ -25,6 +25,8 @@ class InvoiceProvider extends ChangeNotifier {
   double _originalTotal = 0;
   List<String> _editingPhotoUrls = [];
   DateTime? _editingCreatedAt;
+  DateTime? _sessionStart;
+  DateTime? _sessionEnd;
 
   List<Customer> _searchResults = [];
   bool _isSearching = false;
@@ -48,6 +50,8 @@ class InvoiceProvider extends ChangeNotifier {
   bool get isEditing => _editingInvoiceId != null;
   List<Customer> get searchResults => _searchResults;
   bool get isSearching => _isSearching;
+  DateTime? get sessionStart => _sessionStart;
+  DateTime? get sessionEnd => _sessionEnd;
 
   // Improved helper to remove Vietnamese diacritics without corrupting the string
   String _normalizeAndRemoveDiacritics(String str) {
@@ -177,6 +181,12 @@ class InvoiceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setSessionRange(DateTime? start, DateTime? end) {
+    _sessionStart = start;
+    _sessionEnd = end;
+    notifyListeners();
+  }
+
   void addService() {
     _services.add(ServiceItem(serviceName: '', price: 0));
     notifyListeners();
@@ -208,6 +218,8 @@ class InvoiceProvider extends ChangeNotifier {
     _selectedCustomer = customer;
     _services = List.from(invoice.services);
     _discountPercent = invoice.discountPercent;
+    _sessionStart = invoice.sessionStart;
+    _sessionEnd = invoice.sessionEnd;
     
     notifyListeners();
   }
@@ -228,6 +240,13 @@ class InvoiceProvider extends ChangeNotifier {
       return null;
     }
 
+    if (_editingInvoiceId == null && (_sessionStart == null || _sessionEnd == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select session date & time')),
+      );
+      return null;
+    }
+
     _isSaving = true;
     notifyListeners();
 
@@ -242,6 +261,8 @@ class InvoiceProvider extends ChangeNotifier {
         finalTotal: finalTotal,
         photoUrls: _editingInvoiceId != null ? _editingPhotoUrls : [],
         createdAt: _editingCreatedAt ?? DateTime.now(),
+        sessionStart: _sessionStart,
+        sessionEnd: _sessionEnd,
       );
 
       String? invoiceId;
@@ -292,6 +313,8 @@ class InvoiceProvider extends ChangeNotifier {
     _originalTotal = 0;
     _editingPhotoUrls = [];
     _editingCreatedAt = null;
+    _sessionStart = null;
+    _sessionEnd = null;
     _resetCounter++;
     notifyListeners();
   }

@@ -6,7 +6,6 @@ import '../../../core/providers/invoice_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/providers/customer_provider.dart';
 import 'package:intl/intl.dart';
-import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:js' as js;
@@ -144,7 +143,13 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                           child: Column(
                             children: [
                               Text(businessConfig.businessName.toUpperCase(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2)),
-                              Text(DateFormat('dd/MM/yyyy - HH:mm').format(DateTime.now()), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                              const SizedBox(height: 4),
+                              Text(
+                                provider.sessionStart != null && provider.sessionEnd != null
+                                    ? 'Session: ${DateFormat('dd/MM/yyyy').format(provider.sessionStart!)} (${DateFormat('HH:mm').format(provider.sessionStart!)} - ${DateFormat('HH:mm').format(provider.sessionEnd!)})'
+                                    : DateFormat('dd/MM/yyyy - HH:mm').format(DateTime.now()),
+                                style: const TextStyle(fontSize: 10, color: Colors.grey),
+                              ),
                               const SizedBox(height: 16),
                               const Text('INVOICE', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.black)),
                               const SizedBox(height: 24),

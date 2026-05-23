@@ -5,6 +5,7 @@ import '../../core/providers/settings_provider.dart';
 import 'widgets/customer_search_dialog.dart';
 import 'widgets/add_customer_dialog.dart';
 import 'widgets/invoice_summary_dialog.dart';
+import 'widgets/session_time_picker_dialog.dart';
 import '../../data/models/app_settings_model.dart';
 import 'package:intl/intl.dart';
 
@@ -19,6 +20,7 @@ class _InvoicePageState extends State<InvoicePage> {
   final List<TextEditingController> _nameControllers = [];
   final List<TextEditingController> _priceControllers = [];
   final TextEditingController _discountController = TextEditingController();
+  bool _showSessionTimeError = false;
 
   @override
   void dispose() {
@@ -53,6 +55,7 @@ class _InvoicePageState extends State<InvoicePage> {
   void _handleReset(InvoiceProvider provider) {
     provider.reset();
     setState(() {
+      _showSessionTimeError = false;
       for (var c in _nameControllers) {
         c.dispose();
       }
@@ -115,6 +118,18 @@ class _InvoicePageState extends State<InvoicePage> {
             const Text('Customer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             _CustomerSelector(provider: provider),
+            const SizedBox(height: 20),
+            const Text('Session Time', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            _SessionDurationSelector(
+              provider: provider,
+              showError: _showSessionTimeError,
+              onTap: () {
+                setState(() {
+                  _showSessionTimeError = false;
+                });
+              },
+            ),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -293,7 +308,30 @@ class _InvoicePageState extends State<InvoicePage> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () => showDialog(context: context, builder: (context) => const InvoiceSummaryDialog()),
+                onPressed: () {
+                  if (provider.selectedCustomer == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please select a customer')),
+                    );
+                    return;
+                  }
+                  if (provider.services.isEmpty || provider.subtotal <= 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Invoice must have at least one service')),
+                    );
+                    return;
+                  }
+                  if (!provider.isEditing && (provider.sessionStart == null || provider.sessionEnd == null)) {
+                    setState(() {
+                      _showSessionTimeError = true;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please select session date & time')),
+                    );
+                    return;
+                  }
+                  showDialog(context: context, builder: (context) => const InvoiceSummaryDialog());
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.pink,
                   foregroundColor: Colors.white,
@@ -358,6 +396,125 @@ class _CustomerSelector extends StatelessWidget {
                 ),
               if (customer != null)
                 const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SessionDurationSelector extends StatelessWidget {
+  final InvoiceProvider provider;
+  final bool showError;
+  final VoidCallback onTap;
+
+  const _SessionDurationSelector({
+    required this.provider,
+    required this.showError,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final start = provider.sessionStart;
+    final end = provider.sessionEnd;
+    final hasSelection = start != null && end != null;
+    
+    final dateStr = hasSelection ? DateFormat('dd/MM/yyyy').format(start) : '';
+    final timeStr = hasSelection ? '${DateFormat('HH:mm').format(start)} - ${DateFormat('HH:mm').format(end)}' : '';
+    
+    String durationText = '';
+    if (hasSelection) {
+      final diffMinutes = end.difference(start).inMinutes;
+      final hours = diffMinutes / 60.0;
+      final formattedHours = hours.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+      durationText = '$formattedHours hr${hours == 1 ? '' : 's'}';
+    }
+
+    final Color cardColor;
+    final Color borderCol;
+    final Color iconBgColor;
+    final Color titleColor;
+    final Color subtitleColor;
+    final String subtitleText;
+
+    if (hasSelection) {
+      cardColor = Colors.pink.withOpacity(0.05);
+      borderCol = Colors.pink.withOpacity(0.1);
+      iconBgColor = Colors.pink;
+      titleColor = Colors.grey[700]!;
+      subtitleColor = Colors.black;
+      subtitleText = '$dateStr | $timeStr ($durationText)';
+    } else if (showError) {
+      cardColor = Colors.amber.withOpacity(0.05);
+      borderCol = Colors.amber.withOpacity(0.2);
+      iconBgColor = Colors.amber;
+      titleColor = Colors.amber[950]!;
+      subtitleColor = Colors.amber[900]!;
+      subtitleText = 'Mandatory field - tap to select';
+    } else {
+      cardColor = Colors.pink.withOpacity(0.05);
+      borderCol = Colors.pink.withOpacity(0.1);
+      iconBgColor = Colors.pink;
+      titleColor = Colors.grey[700]!;
+      subtitleColor = Colors.grey[500]!;
+      subtitleText = 'Tap to select session time';
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderCol),
+      ),
+      child: InkWell(
+        onTap: () {
+          onTap();
+          showDialog(
+            context: context,
+            builder: (context) => SessionTimePickerDialog(
+              initialStart: provider.sessionStart,
+              initialEnd: provider.sessionEnd,
+              onSave: (s, e) => provider.setSessionRange(s, e),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: iconBgColor,
+                child: Icon(hasSelection ? Icons.access_time_filled : Icons.access_time, color: Colors.white),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hasSelection ? 'Session Duration' : 'Select Session Time',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: titleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitleText,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: subtitleColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: showError && !hasSelection ? Colors.amber[900] : Colors.grey),
             ],
           ),
         ),

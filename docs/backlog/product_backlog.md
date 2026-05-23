@@ -11,6 +11,7 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-004**: As a user, I want to save invoices to Firestore and have the customer's `total_spent` updated automatically.
 - [x] **STORY-005**: As a user, I want to see a beautiful summary view of the invoice with a payment QR code and an option to save as image.
 - [x] **STORY-027**: As a user, I want to view, download, and edit past invoices directly from the customer's history, with automatic `total_spent` adjustments.
+- [x] **STORY-035**: As a user, I want to input the session date & times (check-in/check-out style) for invoices to precisely track service duration and feed scheduling analytics.
 
 ## Epic 2: Reporting & Dashboard
 *Goal: Provide insights into business performance.*
@@ -63,6 +64,16 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-024**: As a user, I want to sign in with my Google account to save my data permanently.
 - [x] **STORY-025**: As a user, I want my data to be securely isolated from other users.
 - [x] **STORY-026**: As an admin, I want to backup and restore legacy data to specific user accounts.
+
+## Changelogs - May 23, 2026
+### v1.8.0 - Client Session Time Tracking & Heatmap Optimization (2026-05-23)
+- **Check-in/Check-out Session Picker**: Implemented a fast session date & time range picker (30-minute blocks, 07:00 to 24:00) with a compact date slider row (left/right chevron navigation and direct calendar picker).
+- **Mandatory Session Validation**: Enforced session timing input for new invoices, displaying warning indicators ("Mandatory field - tap to select") dynamically upon checkout pre-view/save attempt.
+- **Enhanced Time Displays**:
+  - **Invoice Detail**: Under customer name, displays as `dd/MM/yyyy  HH:mm - HH:mm (duration hrs)`.
+  - **Daily Details Dialog**: Displays starting time of invoice under customer name.
+  - **Customer History**: Displays session times and duration for past invoice items.
+- **Precision Heatmap Analytics**: Updated the "Busiest Days & Times" dashboard heatmap to aggregate counts based on actual session start times (`sessionStart` with fallback to `createdAt`), maintaining `createdAt` for financial analytics.
 
 ## Changelogs - May 22, 2026
 ### v1.7.0 - Advanced Salon Dashboard & Date Range Analytics (2026-05-22)
