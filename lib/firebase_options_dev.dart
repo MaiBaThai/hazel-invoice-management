@@ -26,10 +26,7 @@ class DefaultFirebaseOptions {
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
@@ -60,5 +57,15 @@ class DefaultFirebaseOptions {
     authDomain: 'invocie-management.firebaseapp.com',
     storageBucket: 'invocie-management.firebasestorage.app',
     measurementId: 'G-8JWXTSQ8X9',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyCRaut_x8i3Ysn9Az2fp3rKJdXZegNcs5s',
+    appId: '1:758686692514:ios:0ddb41d0463b0e65f693fb',
+    messagingSenderId: '758686692514',
+    projectId: 'invocie-management',
+    storageBucket: 'invocie-management.firebasestorage.app',
+    iosClientId: '758686692514-qcakjpuub1045rhu5qmmi7072hspo6gi.apps.googleusercontent.com',
+    iosBundleId: 'com.maibathai.invoice.dev',
   );
 }

@@ -450,7 +450,7 @@ class _SessionDurationSelector extends StatelessWidget {
       cardColor = Colors.amber.withOpacity(0.05);
       borderCol = Colors.amber.withOpacity(0.2);
       iconBgColor = Colors.amber;
-      titleColor = Colors.amber[950]!;
+      titleColor = Colors.amber[900]!;
       subtitleColor = Colors.amber[900]!;
       subtitleText = 'Mandatory field - tap to select';
     } else {

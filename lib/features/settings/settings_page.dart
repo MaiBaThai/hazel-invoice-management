@@ -9,8 +9,7 @@ import '../../data/models/app_settings_model.dart';
 import '../../data/models/invoice_model.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import '../../core/utils/web_helper.dart' as web_helper;
 import '../../data/services/migration_service.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -636,17 +635,10 @@ class SettingsPage extends StatelessWidget {
       final jsonString = const JsonEncoder.withIndent('  ').convert(data);
       
       if (kIsWeb) {
-        final bytes = utf8.encode(jsonString);
-        final blob = html.Blob([bytes]);
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        
         final String userLabel = auth.user?.email?.split('@').first ?? auth.user!.uid.substring(0, 8);
         final String fileName = "nms_backup_${userLabel}_${DateTime.now().millisecondsSinceEpoch}.json";
-
-        final anchor = html.AnchorElement(href: url)
-          ..setAttribute("download", fileName)
-          ..click();
-        html.Url.revokeObjectUrl(url);
+        
+        web_helper.downloadBackupWeb(jsonString, fileName);
         
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Backup downloaded successfully!')));
@@ -679,67 +671,59 @@ class SettingsPage extends StatelessWidget {
     }
 
     final bool isAdmin = auth.user?.email == 'thai.maiba1984@gmail.com';
-    final html.FileUploadInputElement input = html.FileUploadInputElement();
-    input.accept = '.json';
-    input.click();
+    web_helper.uploadBackupWeb(
+      onSuccess: (jsonData) async {
+        if (!context.mounted) return;
 
-    input.onChange.listen((event) {
-      final files = input.files;
-      if (files?.isEmpty ?? true) return;
+        String? targetUid;
+        bool confirmed = false;
 
-      final reader = html.FileReader();
-      reader.readAsText(files![0]);
-      reader.onLoadEnd.listen((e) async {
-        try {
-          final String content = reader.result as String;
-          final Map<String, dynamic> jsonData = jsonDecode(content);
-
-          if (!context.mounted) return;
-
-          String? targetUid;
-          bool confirmed = false;
-
-          if (isAdmin) {
-            final target = await _showAdminRestoreDialog(context);
-            if (target != null) {
-              targetUid = target == 'ROOT' ? null : target;
-              confirmed = true;
-            }
-          } else {
-            confirmed = await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Confirm Restore'),
-                content: const Text('This will PERMANENTLY overwrite all your current data with the contents of the JSON file. This action cannot be undone. Proceed?'),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true), 
-                    child: const Text('RESTORE NOW', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            ) ?? false;
-            if (confirmed) {
-              targetUid = auth.user!.uid;
-            }
+        if (isAdmin) {
+          final target = await _showAdminRestoreDialog(context);
+          if (target != null) {
+            targetUid = target == 'ROOT' ? null : target;
+            confirmed = true;
           }
-
-          if (confirmed && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restoring data... Please wait.')));
-            await auth.migrationService.importDataFromJson(jsonData, targetUserId: targetUid);
-            
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Restore successful!')));
-            }
-          }
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Restore failed: $e')));
+        } else {
+          confirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Confirm Restore'),
+              content: const Text('This will PERMANENTLY overwrite all your current data with the contents of the JSON file. This action cannot be undone. Proceed?'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true), 
+                  child: const Text('RESTORE NOW', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ) ?? false;
+          if (confirmed) {
+            targetUid = auth.user!.uid;
           }
         }
-      });
-    });
+
+        if (confirmed && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restoring data... Please wait.')));
+          try {
+            await auth.migrationService.importDataFromJson(jsonData, targetUserId: targetUid);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restore successful!')));
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Restore failed: $e')));
+            }
+          }
+        }
+      },
+      onError: (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Restore failed: $e')));
+        }
+      },
+    );
   }
 
   Future<String?> _showAdminRestoreDialog(BuildContext context) async {
@@ -1010,7 +994,7 @@ class SettingsPage extends StatelessWidget {
             // A full reload is still the safest way to ensure NO stale state remains.
             // This time the user stays logged in with their account.
             if (kIsWeb) {
-              html.window.location.reload();
+              web_helper.reloadPageWeb();
             } else {
               // Fallback for mobile: reset key providers manually
               Provider.of<InvoiceProvider>(context, listen: false).reset();

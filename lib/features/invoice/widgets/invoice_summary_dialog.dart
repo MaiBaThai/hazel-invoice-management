@@ -8,7 +8,7 @@ import '../../../core/providers/customer_provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:js' as js;
+import '../../../core/utils/web_helper.dart' as web_helper;
 import '../../../main.dart';
 import '../../../data/models/app_settings_model.dart';
 
@@ -36,18 +36,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
       final fileName = 'Invoice_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.png';
 
       if (kIsWeb) {
-        final base64 = base64Encode(pngBytes);
-        js.context.callMethod('eval', [
-          '''
-          var element = document.createElement('a');
-          element.setAttribute('href', 'data:application/octet-stream;base64,' + '$base64');
-          element.setAttribute('download', '$fileName');
-          element.style.display = 'none';
-          document.body.appendChild(element);
-          element.click();
-          document.body.removeChild(element);
-          '''
-        ]);
+        web_helper.downloadInvoiceImageWeb(pngBytes, fileName);
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

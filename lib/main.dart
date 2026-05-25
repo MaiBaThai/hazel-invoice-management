@@ -16,19 +16,31 @@ import 'firebase_options_dev.dart' as dev;
 import 'firebase_options_prod.dart' as prod;
 import 'package:nms/data/services/database_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
-final GlobalKey<MainNavigationPageState> mainNavKey = GlobalKey<MainNavigationPageState>();
+final GlobalKey<MainNavigationPageState> mainNavKey =
+    GlobalKey<MainNavigationPageState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  const String environment = String.fromEnvironment('ENVIRONMENT', defaultValue: 'dev');
-  
-  await Firebase.initializeApp(
-    options: environment == 'prod' 
-        ? prod.DefaultFirebaseOptions.currentPlatform 
-        : dev.DefaultFirebaseOptions.currentPlatform,
-  );
+  const String environment =
+      String.fromEnvironment('ENVIRONMENT', defaultValue: 'dev');
+
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: environment == 'prod'
+            ? prod.DefaultFirebaseOptions.currentPlatform
+            : dev.DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    debugPrint('==================================================');
+    debugPrint('FATAL: Firebase initialization failed: $e');
+    debugPrint('Please ensure the running flavor matches the --dart-define=ENVIRONMENT option.');
+    debugPrint('For example, use: flutter run --flavor prod --dart-define=ENVIRONMENT=prod');
+    debugPrint('==================================================');
+    rethrow;
+  }
 
   // Initialize Google Sign In for v7.2.0 compatibility
   try {
@@ -41,7 +53,7 @@ void main() async {
   final authProvider = AuthProvider();
   // Don't await here to avoid blocking app startup if Auth is slow (e.g. in Incognito)
   authProvider.signInSilently();
-  
+
   runApp(
     MultiProvider(
       providers: [
@@ -56,15 +68,18 @@ void main() async {
           update: (_, db, previous) => previous!..updateDbService(db),
         ),
         ChangeNotifierProxyProvider<DatabaseService, DashboardProvider>(
-          create: (context) => DashboardProvider(context.read<DatabaseService>()),
+          create: (context) =>
+              DashboardProvider(context.read<DatabaseService>()),
           update: (_, db, previous) => previous!..updateDbService(db),
         ),
         ChangeNotifierProxyProvider<DatabaseService, CustomerProvider>(
-          create: (context) => CustomerProvider(context.read<DatabaseService>()),
+          create: (context) =>
+              CustomerProvider(context.read<DatabaseService>()),
           update: (_, db, previous) => previous!..updateDbService(db),
         ),
         ChangeNotifierProxyProvider<DatabaseService, SettingsProvider>(
-          create: (context) => SettingsProvider(context.read<DatabaseService>())..loadSettings(),
+          create: (context) =>
+              SettingsProvider(context.read<DatabaseService>())..loadSettings(),
           update: (_, db, previous) => previous!..updateDbService(db),
         ),
         ChangeNotifierProxyProvider<DatabaseService, ExpenseProvider>(
@@ -116,7 +131,8 @@ class MainNavigationPageState extends State<MainNavigationPage> {
       _selectedIndex = index;
     });
     if (index == 2) {
-      Provider.of<DashboardProvider>(context, listen: false).loadDashboardData();
+      Provider.of<DashboardProvider>(context, listen: false)
+          .loadDashboardData();
     } else if (index == 3) {
       Provider.of<CustomerProvider>(context, listen: false).loadCustomers();
     }

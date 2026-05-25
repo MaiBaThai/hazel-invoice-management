@@ -65,6 +65,32 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-025**: As a user, I want my data to be securely isolated from other users.
 - [x] **STORY-026**: As an admin, I want to backup and restore legacy data to specific user accounts.
 
+## Epic 8: iOS Porting & App Store Submission
+*Goal: Port the application to iOS, align configurations, ensure App Store compliance, and submit to TestFlight.*
+
+- [x] **STORY-036**: As a developer, I want to separate development and production iOS settings (schemes, Bundle IDs, Info.plists, and GoogleService-Info.plists) to avoid wrong configurations.
+- [ ] **STORY-037**: As a user, I want to sign in using Apple Authentication on iOS devices for compliance.
+- [ ] **STORY-038**: As a user, I want the app to request native iOS permissions (camera/photo library) with descriptions and declare API usage in a Privacy Manifest.
+- [ ] **STORY-039**: As a user, I want the app UI to support iOS notch and home indicator safe areas.
+- [ ] **STORY-040**: As a developer, I want to build and submit the release app bundle to TestFlight for developer testing.
+
+## Changelogs - May 25, 2026
+### v1.9.1 - iOS Emulator Blocker Resolution & Mobile Compilation Fixes (2026-05-25)
+- **Conditional Web Helper**: Created a platform-agnostic file helper ([web_helper.dart](file:///Users/maibathai/Documents/Personal/invoice/lib/core/utils/web_helper.dart)) to isolate web-only imports (`dart:html` and `dart:js`), successfully resolving compilation failures on mobile targets.
+- **Firebase Initialization Mismatch Handling**: Added error catching and console diagnostic warnings in `main.dart` for runtime environment configuration checks to avoid silent app hangs.
+- **Duplicate App Exception Fix**: Handled multiple/restarted Firebase configurations by checking `Firebase.apps.isEmpty` dynamically.
+- **Simulator Graphics Workaround**: Documented and verified Skia rendering fallback (`--no-enable-impeller`) to bypass Apple Impeller Metal drawable allocation crashes on Simulator.
+- **CocoaPods Deploy Target Alignment**: Configured all Pod dependencies to target iOS 15.0 to align with the main project target.
+- **Web App Deployments**: Compiled and deployed the latest changes to both the development (invocie-management) and production (invoices-management-c4ef0) environments.
+
+## Changelogs - May 24, 2026
+### v1.9.0 - iOS Core Environment & Firebase Setup (2026-05-24)
+- **Xcode Flavor Configuration**: Defined Xcode Build Configurations (`Debug-dev`, `Release-prod`, etc.) and Schemes for `dev` and `prod` flavors to support `flutter build --flavor`.
+- **Firebase iOS Config Separation**: Moved `GoogleService-Info.plist` files into separate directories (`ios/config/dev/` and `ios/config/prod/`). Added a custom Xcode Build Phase to copy the correct file dynamically.
+- **Isolated Info.plist Files**: Created separate `Info-dev.plist` (app name "My Salon Dev", dev Google Sign-in URL scheme) and `Info-prod.plist` (app name "My Salon", prod URL scheme) config files, removing the shared `Info.plist`.
+- **Firebase Options Integration**: Configured `TargetPlatform.iOS` in `lib/firebase_options_dev.dart` and `lib/firebase_options_prod.dart` with respective Firebase iOS credentials.
+- **Web App Verification**: Successfully compiled `flutter build web` locally to guarantee the live web app is completely unaffected.
+
 ## Changelogs - May 23, 2026
 ### v1.8.0 - Client Session Time Tracking & Heatmap Optimization (2026-05-23)
 - **Check-in/Check-out Session Picker**: Implemented a fast session date & time range picker (30-minute blocks, 07:00 to 24:00) with a compact date slider row (left/right chevron navigation and direct calendar picker).
