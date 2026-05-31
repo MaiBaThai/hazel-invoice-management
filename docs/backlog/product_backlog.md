@@ -56,6 +56,7 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-020**: As a user, I want to record expenses with itemized descriptions and costs.
 - [x] **STORY-021**: As a user, I want quick-add categories (Rent, Supplies, Utilities) to speed up expense entry.
 - [x] **STORY-022**: As a user, I want to see the impact of expenses on my daily/monthly profit on the Dashboard.
+- [x] **STORY-041**: As a user, I want to edit and delete existing expenses from the Dashboard Daily Performance dialog, with dynamic recalculations of expenses, profits, and profit margins.
 
 ## Epic 7: Multi-User & Security [DONE]
 *Goal: Implement secure user authentication and data isolation.*
@@ -73,6 +74,14 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [ ] **STORY-038**: As a user, I want the app to request native iOS permissions (camera/photo library) with descriptions and declare API usage in a Privacy Manifest.
 - [ ] **STORY-039**: As a user, I want the app UI to support iOS notch and home indicator safe areas.
 - [ ] **STORY-040**: As a developer, I want to build and submit the release app bundle to TestFlight for developer testing.
+
+## Changelogs - May 31, 2026
+### v1.10.0 - Expense Editing/Deletion & Date/Time Display Optimization (2026-05-31)
+- **Expense CRUD Completion**: Implemented full edit and delete actions for recorded expenses. Tapping an expense in the Daily Performance dialog now slides up a detailed bottom sheet allowing editing (loading values back into the Expenses tab state and switching tabs) or deletion (with confirmation warning).
+- **Automated Recalculations**: Configured live dashboard stats (Expenses, Net Profit, Profit Margin) to automatically re-evaluate and update when an expense is updated or deleted.
+- **Dynamic Date/Time Display**: Upgraded dialog list item labels to display the full date and time (`dd/MM/yyyy HH:mm`) instead of just time, including full session range details for invoices (`dd/MM/yyyy HH:mm - HH:mm`), supporting ranges like 30D/90D/YTD.
+- **Header Clean-up**: Removed the static date subtitle under the "Daily Performance" dialog header to keep the details dialog clean and relevant for aggregated range views (weekly/monthly).
+- **Web App Production Deployment**: Successfully compiled and deployed the production release to `invoices-management-c4ef0` at `https://invoices-management-c4ef0.web.app`.
 
 ## Changelogs - May 25, 2026
 ### v1.9.1 - iOS Emulator Blocker Resolution & Mobile Compilation Fixes (2026-05-25)
