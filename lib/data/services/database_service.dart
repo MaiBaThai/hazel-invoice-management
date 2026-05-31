@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import '../models/customer_model.dart';
 import '../models/invoice_model.dart';
@@ -276,6 +275,10 @@ class DatabaseService {
 
   Future<void> setExpense(String id, Expense expense) async {
     await _expensesRef.doc(id).set(expense.toMap());
+  }
+
+  Future<void> deleteExpense(String expenseId) async {
+    await _expensesRef.doc(expenseId).delete();
   }
 
   Future<List<Expense>> getExpensesSince(DateTime date) async {

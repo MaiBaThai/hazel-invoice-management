@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/providers/expense_provider.dart';
 import 'package:intl/intl.dart';
 import '../../../core/providers/settings_provider.dart';
+import '../../../core/providers/dashboard_provider.dart';
 import '../../../data/models/app_settings_model.dart';
 
 class ExpenseSummaryDialog extends StatelessWidget {
@@ -29,10 +30,10 @@ class ExpenseSummaryDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Center(
+              Center(
                 child: Text(
-                  'Expense Summary',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  provider.isEditing ? 'Review Expense Update' : 'Expense Summary',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(height: 16),
@@ -96,12 +97,14 @@ class ExpenseSummaryDialog extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: provider.isSaving ? null : () async {
                         try {
+                          final wasEditing = provider.isEditing;
                           await provider.saveExpense();
                           if (context.mounted) {
+                            Provider.of<DashboardProvider>(context, listen: false).loadDashboardData();
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Expense saved successfully!'),
+                              SnackBar(
+                                content: Text(wasEditing ? 'Expense updated successfully!' : 'Expense saved successfully!'),
                                 backgroundColor: Colors.green,
                               ),
                             );
@@ -125,7 +128,7 @@ class ExpenseSummaryDialog extends StatelessWidget {
                       ),
                       child: provider.isSaving
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Text('SAVE RECORD'),
+                          : Text(provider.isEditing ? 'UPDATE RECORD' : 'SAVE RECORD'),
                     ),
                   ),
                 ],

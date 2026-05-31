@@ -15,9 +15,15 @@ class ExpenseProvider with ChangeNotifier {
   String _note = '';
   bool _isSaving = false;
 
+  // Edit state variables
+  String? _editingExpenseId;
+  DateTime? _editingCreatedAt;
+
   List<ExpenseItem> get items => List.unmodifiable(_items);
   String get note => _note;
   bool get isSaving => _isSaving;
+  bool get isEditing => _editingExpenseId != null;
+  String? get editingExpenseId => _editingExpenseId;
 
   double get totalCost => _items.fold(0, (sum, item) => sum + item.cost);
 
@@ -45,10 +51,21 @@ class ExpenseProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void loadExpenseForEditing(Expense expense) {
+    _editingExpenseId = expense.id;
+    _editingCreatedAt = expense.createdAt;
+    _items.clear();
+    _items.addAll(expense.items);
+    _note = expense.note;
+    notifyListeners();
+  }
+
   void reset() {
     _items.clear();
     _note = '';
     _isSaving = false;
+    _editingExpenseId = null;
+    _editingCreatedAt = null;
     notifyListeners();
   }
 
@@ -60,19 +77,30 @@ class ExpenseProvider with ChangeNotifier {
 
     try {
       final expense = Expense(
-        id: '',
+        id: _editingExpenseId ?? '',
         items: _items,
         totalCost: totalCost,
         note: _note,
-        createdAt: DateTime.now(),
+        createdAt: _editingCreatedAt ?? DateTime.now(),
       );
 
-      await _db.saveExpense(expense);
+      if (_editingExpenseId != null) {
+        await _db.setExpense(_editingExpenseId!, expense);
+      } else {
+        await _db.saveExpense(expense);
+      }
       reset();
     } catch (e) {
       _isSaving = false;
       notifyListeners();
       rethrow;
+    }
+  }
+
+  Future<void> deleteExpense(String expenseId) async {
+    await _db.deleteExpense(expenseId);
+    if (_editingExpenseId == expenseId) {
+      reset();
     }
   }
 }

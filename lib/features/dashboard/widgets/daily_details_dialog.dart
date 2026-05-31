@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../data/models/invoice_model.dart';
 import '../../../data/models/expense_model.dart';
 import '../../invoice/widgets/invoice_detail_view.dart';
+import '../../expenses/widgets/expense_detail_view.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/settings_provider.dart';
@@ -51,7 +52,6 @@ class DailyDetailsDialog extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text('Daily Performance', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                        Text(DateFormat('dd/MM/yyyy').format(date), style: const TextStyle(color: Colors.grey)),
                       ],
                     ),
                     IconButton(
@@ -130,7 +130,15 @@ class DailyDetailsDialog extends StatelessWidget {
                     children: [
                       Text(invoice.customerName, style: const TextStyle(fontWeight: FontWeight.bold)),
                       Text(
-                        DateFormat('HH:mm').format(invoice.sessionStart ?? invoice.createdAt),
+                        () {
+                          final start = invoice.sessionStart;
+                          final end = invoice.sessionEnd;
+                          if (start != null && end != null) {
+                            return '${DateFormat('dd/MM/yyyy HH:mm').format(start)} - ${DateFormat('HH:mm').format(end)}';
+                          } else {
+                            return DateFormat('dd/MM/yyyy HH:mm').format(invoice.createdAt);
+                          }
+                        }(),
                         style: const TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                     ],
@@ -154,36 +162,60 @@ class DailyDetailsDialog extends StatelessWidget {
       separatorBuilder: (_, __) => const Divider(),
       itemBuilder: (context, index) {
         final expense = expenses[index];
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(DateFormat('HH:mm').format(expense.createdAt), style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                  Text(formatCurrency(expense.totalCost), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
-                ],
+        return InkWell(
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => DraggableScrollableSheet(
+                initialChildSize: 0.9,
+                maxChildSize: 0.9,
+                minChildSize: 0.5,
+                builder: (_, controller) => Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  child: ExpenseDetailView(
+                    expense: expense,
+                    scrollController: controller,
+                  ),
+                ),
               ),
-              const SizedBox(height: 4),
-              ...expense.items.map((item) => Padding(
-                padding: const EdgeInsets.only(left: 8, top: 2),
-                child: Row(
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.subdirectory_arrow_right, size: 12, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Expanded(child: Text(item.description, style: const TextStyle(fontSize: 13))),
-                    Text(formatCurrency(item.cost), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                    Text(DateFormat('dd/MM/yyyy HH:mm').format(expense.createdAt), style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text(formatCurrency(expense.totalCost), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
                   ],
                 ),
-              )).toList(),
-              if (expense.note.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(left: 8, top: 4),
-                  child: Text('Note: ${expense.note}', style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.grey)),
-                ),
-            ],
+                const SizedBox(height: 4),
+                ...expense.items.map((item) => Padding(
+                  padding: const EdgeInsets.only(left: 8, top: 2),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.subdirectory_arrow_right, size: 12, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Expanded(child: Text(item.description, style: const TextStyle(fontSize: 13))),
+                      Text(formatCurrency(item.cost), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                )),
+                if (expense.note.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8, top: 4),
+                    child: Text('Note: ${expense.note}', style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.grey)),
+                  ),
+              ],
+            ),
           ),
         );
       },

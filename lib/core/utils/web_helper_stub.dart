@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 void downloadBackupWeb(String jsonString, String fileName) {
   throw UnsupportedError('downloadBackupWeb is only supported on web.');

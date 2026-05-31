@@ -31,7 +31,7 @@ class CustomerProvider extends ChangeNotifier {
   List<Customer> _allCustomers = [];
   List<Customer> _searchResults = [];
   bool _isLoading = false;
-  bool _isSearching = false;
+  final bool _isSearching = false;
 
   Customer? _selectedCustomer;
   List<Invoice> _customerInvoices = [];

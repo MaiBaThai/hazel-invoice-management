@@ -38,26 +38,20 @@ class MigrationService {
       // 2. Copy Customers
       final customers = await globalDb.getCustomers();
       for (var customer in customers) {
-        if (customer.id != null) {
-          await userScopedDb.setCustomer(customer.id!, customer);
-        }
-      }
+        await userScopedDb.setCustomer(customer.id, customer);
+            }
 
       // 3. Copy Invoices
       final invoices = await globalDb.getInvoicesSince(DateTime(2020));
       for (var invoice in invoices) {
-        if (invoice.id != null) {
-          await userScopedDb.setInvoice(invoice.id!, invoice);
-        }
-      }
+        await userScopedDb.setInvoice(invoice.id, invoice);
+            }
 
       // 4. Copy Expenses
       final expenses = await globalDb.getExpensesSince(DateTime(2020));
       for (var expense in expenses) {
-        if (expense.id != null) {
-          await userScopedDb.saveExpense(expense);
-        }
-      }
+        await userScopedDb.saveExpense(expense);
+            }
 
       debugPrint('Data copied to user-scoped collections successfully.');
     } catch (e) {

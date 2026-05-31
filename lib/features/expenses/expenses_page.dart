@@ -17,16 +17,52 @@ class _ExpensesPageState extends State<ExpensesPage> {
   final List<TextEditingController> _descControllers = [];
   final List<TextEditingController> _costControllers = [];
   final TextEditingController _noteController = TextEditingController();
+  String? _lastEditingExpenseId;
 
   @override
   void dispose() {
-    for (var c in _descControllers) c.dispose();
-    for (var c in _costControllers) c.dispose();
+    for (var c in _descControllers) {
+      c.dispose();
+    }
+    for (var c in _costControllers) {
+      c.dispose();
+    }
     _noteController.dispose();
     super.dispose();
   }
 
   void _syncWithProvider(ExpenseProvider provider) {
+    // If the editing ID changed, clear our local controllers so they get rebuilt with correct text
+    if (provider.editingExpenseId != _lastEditingExpenseId) {
+      _lastEditingExpenseId = provider.editingExpenseId;
+      for (var c in _descControllers) {
+        c.dispose();
+      }
+      for (var c in _costControllers) {
+        c.dispose();
+      }
+      _descControllers.clear();
+      _costControllers.clear();
+      _noteController.clear();
+      if (provider.note.isNotEmpty) {
+        _noteController.text = provider.note;
+      }
+    }
+
+    // Force clear local controllers if provider is reset/empty
+    if (provider.items.isEmpty && provider.note.isEmpty && (_descControllers.isNotEmpty || _noteController.text.isNotEmpty)) {
+      for (var c in _descControllers) {
+        c.dispose();
+      }
+      for (var c in _costControllers) {
+        c.dispose();
+      }
+      _descControllers.clear();
+      _costControllers.clear();
+      _noteController.clear();
+      return;
+    }
+
     while (_descControllers.length < provider.items.length) {
       final index = _descControllers.length;
       final item = provider.items[index];
@@ -72,8 +108,20 @@ class _ExpensesPageState extends State<ExpensesPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Expenses', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          provider.isEditing ? 'Edit Expense' : 'Expenses',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
+        leading: provider.isEditing
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  provider.reset();
+                  setState(() {});
+                },
+              )
+            : null,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -246,7 +294,10 @@ class _ExpensesPageState extends State<ExpensesPage> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
-                      child: const Text('REVIEW TRANSACTION', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                      child: Text(
+                        provider.isEditing ? 'REVIEW UPDATE' : 'REVIEW TRANSACTION',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.1),
+                      ),
                     ),
                   ),
                 ],

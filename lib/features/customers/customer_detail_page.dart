@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/customer_provider.dart';
 import '../../core/providers/invoice_provider.dart';
-import '../../data/models/invoice_model.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../data/models/app_settings_model.dart';
 import '../invoice/widgets/invoice_summary_dialog.dart';
@@ -202,14 +201,12 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
   Widget _buildPhotosTab(CustomerProvider provider) {
     final List<Map<String, String>> allPhotos = [];
     for (var inv in provider.customerInvoices) {
-      if (inv.photoUrls != null) {
-        for (var url in inv.photoUrls!) {
-          if (url.isNotEmpty) {
-            allPhotos.add({'url': url, 'invoiceId': inv.id});
-          }
+      for (var url in inv.photoUrls) {
+        if (url.isNotEmpty) {
+          allPhotos.add({'url': url, 'invoiceId': inv.id});
         }
       }
-    }
+        }
 
     if (allPhotos.isEmpty) {
       return const Center(

@@ -76,8 +76,12 @@ class _InvoicePageState extends State<InvoicePage> {
     if (provider.selectedCustomer == null && provider.services.isEmpty && provider.discountPercent == 0) {
        if (_nameControllers.isNotEmpty || _discountController.text.isNotEmpty) {
           // Force clear local controllers if provider is empty
-          for (var c in _nameControllers) c.dispose();
-          for (var c in _priceControllers) c.dispose();
+          for (var c in _nameControllers) {
+            c.dispose();
+          }
+          for (var c in _priceControllers) {
+            c.dispose();
+          }
           _nameControllers.clear();
           _priceControllers.clear();
           _discountController.clear();

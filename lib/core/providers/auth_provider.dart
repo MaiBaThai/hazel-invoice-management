@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nms/data/services/migration_service.dart';
@@ -46,7 +45,7 @@ class AuthProvider with ChangeNotifier {
 
       // Mobile logic
       final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
@@ -76,7 +75,7 @@ class AuthProvider with ChangeNotifier {
 
       // Mobile logic
       final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
@@ -104,7 +103,7 @@ class AuthProvider with ChangeNotifier {
       // Mobile logic
       final GoogleSignInAccount? googleUser = await _googleSignIn.attemptLightweightAuthentication();
       if (googleUser != null) {
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final GoogleSignInAuthentication googleAuth = googleUser.authentication;
         final AuthCredential credential = GoogleAuthProvider.credential(
           idToken: googleAuth.idToken,
         );

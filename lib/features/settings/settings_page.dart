@@ -10,7 +10,6 @@ import '../../data/models/invoice_model.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../core/utils/web_helper.dart' as web_helper;
-import '../../data/services/migration_service.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -288,7 +287,7 @@ class SettingsPage extends StatelessWidget {
               TextField(controller: businessNameCtrl, decoration: const InputDecoration(labelText: 'Business Name')),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: selectedCurrency,
+                initialValue: selectedCurrency,
                 decoration: const InputDecoration(labelText: 'Currency'),
                 items: const [
                   DropdownMenuItem(value: 'k', child: Text('k (1,000 VNĐ)')),
