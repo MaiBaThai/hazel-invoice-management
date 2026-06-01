@@ -7,24 +7,47 @@ import '../models/expense_model.dart';
 import '../models/app_settings_model.dart';
 
 class DatabaseService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FirebaseFirestore _db;
+  final FirebaseStorage? _storageOverride;
+  FirebaseStorage get _storage => _storageOverride ?? FirebaseStorage.instance;
   final String? userId;
+  final bool isAnonymous;
 
-  DatabaseService({this.userId});
+  DatabaseService({
+    this.userId,
+    this.isAnonymous = false,
+    FirebaseFirestore? firestore,
+    FirebaseStorage? storage,
+  })  : _db = firestore ?? FirebaseFirestore.instance,
+        _storageOverride = storage;
+
+  bool _userSynced = false;
+
+  Future<void> _ensureUserSynced() async {
+    if (userId == null) return;
+    if (_userSynced) return;
+
+    final userRef = _db.collection('users').doc(userId);
+    await userRef.set({
+      'uid': userId,
+      'created_at': FieldValue.serverTimestamp(),
+      'last_active': FieldValue.serverTimestamp(),
+      'note': 'Auto-created on first write',
+    }, SetOptions(merge: true));
+
+    _userSynced = true;
+  }
   
   // --- User Management ---
   
   /// Ensures the user document exists in Firestore to prevent "non-existent ancestor" UI issues.
   Future<void> syncUser() async {
     if (userId == null) return;
-    
-    final currentUser = FirebaseFirestore.instance.app.options.projectId.contains('prod') 
-        ? null : null; // Just kidding, I'll use FirebaseAuth.instance
-    
-    // Using import 'package:firebase_auth/firebase_auth.dart'; would be better but I don't want to add more imports if not needed.
-    // Actually, I should just use the userId and basic info.
-    
+    if (isAnonymous) {
+      debugPrint('DatabaseService: Skipping startup syncUser for anonymous user');
+      return;
+    }
+
     final userRef = _db.collection('users').doc(userId);
     final doc = await userRef.get();
     
@@ -112,15 +135,18 @@ class DatabaseService {
   }
 
   Future<String> addCustomer(Customer customer) async {
+    await _ensureUserSynced();
     final docRef = await _customersRef.add(customer.toMap());
     return docRef.id;
   }
 
   Future<void> setCustomer(String id, Customer customer) async {
+    await _ensureUserSynced();
     await _customersRef.doc(id).set(customer.toMap());
   }
 
   Future<void> updateCustomer(String id, String name, String phone) async {
+    await _ensureUserSynced();
     await _customersRef.doc(id).update({
       'name': name,
       'name_lowercase': name.toLowerCase(),
@@ -129,6 +155,7 @@ class DatabaseService {
   }
 
   Future<void> deleteCustomer(String customerId) async {
+    await _ensureUserSynced();
     final batch = _db.batch();
     
     // 1. Delete customer document
@@ -149,6 +176,7 @@ class DatabaseService {
   // --- Invoices ---
 
   Future<String> saveInvoice(Invoice invoice) async {
+    await _ensureUserSynced();
     final invoiceRef = _invoicesRef.doc();
     final invoiceId = invoiceRef.id;
 
@@ -175,6 +203,7 @@ class DatabaseService {
   }
 
   Future<void> updateInvoice(String invoiceId, Invoice newInvoice, double originalTotal) async {
+    await _ensureUserSynced();
     final invoiceRef = _invoicesRef.doc(invoiceId);
 
     await _db.runTransaction((transaction) async {
@@ -200,12 +229,14 @@ class DatabaseService {
   }
 
   Future<void> setInvoice(String id, Invoice invoice) async {
+    await _ensureUserSynced();
     await _invoicesRef.doc(id).set(invoice.toMap());
   }
 
   // --- Storage ---
 
   Future<String> uploadInvoicePhoto(String invoiceId, String customerId, Uint8List bytes) async {
+    await _ensureUserSynced();
     final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
     // Logic: if userId is null, it goes to 'customers/...', if not it goes to 'users/uid/customers/...'
     final path = userId == null 
@@ -229,6 +260,7 @@ class DatabaseService {
   }
 
   Future<void> deleteInvoicePhoto(String invoiceId, String photoUrl) async {
+    await _ensureUserSynced();
     try {
       // 1. Delete from Storage
       final ref = _storage.refFromURL(photoUrl);
@@ -252,6 +284,7 @@ class DatabaseService {
   }
 
   Future<void> updateInvoicePhotos(String invoiceId, List<String> photoUrls) async {
+    await _ensureUserSynced();
     await _invoicesRef.doc(invoiceId).update({
       'photoUrls': FieldValue.arrayUnion(photoUrls),
     });
@@ -269,15 +302,18 @@ class DatabaseService {
   // --- Expenses ---
 
   Future<String> saveExpense(Expense expense) async {
+    await _ensureUserSynced();
     final docRef = await _expensesRef.add(expense.toMap());
     return docRef.id;
   }
 
   Future<void> setExpense(String id, Expense expense) async {
+    await _ensureUserSynced();
     await _expensesRef.doc(id).set(expense.toMap());
   }
 
   Future<void> deleteExpense(String expenseId) async {
+    await _ensureUserSynced();
     await _expensesRef.doc(expenseId).delete();
   }
 
@@ -330,14 +366,12 @@ class DatabaseService {
       debugPrint('Error fetching settings: $e');
     }
     
-    // Create/Return default settings if fetch fails or document doesn't exist
-    final defaultSettings = AppSettings.defaultSettings();
-    // Try to update/save if possible, but don't await indefinitely
-    updateSettings(defaultSettings).catchError((e) => debugPrint('Error saving default settings: $e'));
-    return defaultSettings;
+    // Return default settings in-memory without saving them to Firestore automatically.
+    return AppSettings.defaultSettings();
   }
 
   Future<void> updateSettings(AppSettings settings) async {
+    await _ensureUserSynced();
     await _settingsRef.set(settings.toMap());
   }
 }

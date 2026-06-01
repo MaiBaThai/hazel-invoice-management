@@ -74,6 +74,12 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [ ] **STORY-038**: As a user, I want the app to request native iOS permissions (camera/photo library) with descriptions and declare API usage in a Privacy Manifest.
 - [ ] **STORY-039**: As a user, I want the app UI to support iOS notch and home indicator safe areas.
 - [ ] **STORY-040**: As a developer, I want to build and submit the release app bundle to TestFlight for developer testing.
+## Changelogs - June 1, 2026
+### v1.11.0 - Lazy Firestore Creation for Guest/Anonymous Users (2026-06-01)
+- **Lazy Account/Profile Creation**: Deferred creation of `users/{uid}` and default settings in Firestore for guest/anonymous users. They are now initialized dynamically only when they perform a real write action (e.g., adding a customer, invoice, or expense, or modifying settings).
+- **Decoupled Database Integration**: Refactored the `DatabaseService` constructor to accept optional injected database and storage instances, improving mockability. Lazy-loaded the storage instance to prevent Firebase initialization errors during tests.
+- **Robust Test Coverage**: Implemented a comprehensive unit test suite in `test/database_service_test.dart` verifying the lazy Firestore creation logic for both registered and anonymous user lifecycles.
+- **Production Deployments**: Deployed the updated build to both development (`invocie-management`) and production (`invoices-management-c4ef0`) environments.
 
 ## Changelogs - May 31, 2026
 ### v1.10.0 - Expense Editing/Deletion & Date/Time Display Optimization (2026-05-31)

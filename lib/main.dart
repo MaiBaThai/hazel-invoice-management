@@ -58,9 +58,11 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authProvider),
-        // 1. Provide DatabaseService based on Auth state
         ProxyProvider<AuthProvider, DatabaseService>(
-          update: (_, auth, __) => DatabaseService(userId: auth.user?.uid),
+          update: (_, auth, __) => DatabaseService(
+            userId: auth.user?.uid,
+            isAnonymous: auth.isAnonymous,
+          ),
         ),
         // 2. Provide other providers depending on DatabaseService
         ChangeNotifierProxyProvider<DatabaseService, InvoiceProvider>(
