@@ -57,7 +57,7 @@ void main() {
 
       // 2. Get Settings (should return defaults in-memory, no writes)
       final settings = await dbService.getSettings();
-      expect(settings.businessConfig.businessName, equals('Hazel Nails')); // default name
+      expect(settings.businessConfig.businessName, equals('My Salon')); // default name
 
       // Verify settings doc is NOT created
       final settingsDoc = await fakeDb

@@ -64,19 +64,20 @@ void main() async {
             isAnonymous: auth.isAnonymous,
           ),
         ),
-        // 2. Provide other providers depending on DatabaseService
-        ChangeNotifierProxyProvider<DatabaseService, InvoiceProvider>(
-          create: (context) => InvoiceProvider(context.read<DatabaseService>()),
+        ChangeNotifierProxyProvider<DatabaseService, CustomerProvider>(
+          create: (context) =>
+              CustomerProvider(context.read<DatabaseService>()),
           update: (_, db, previous) => previous!..updateDbService(db),
+        ),
+        ChangeNotifierProxyProvider2<DatabaseService, CustomerProvider, InvoiceProvider>(
+          create: (context) => InvoiceProvider(context.read<DatabaseService>()),
+          update: (_, db, customerProvider, previous) => previous!
+            ..updateDbService(db)
+            ..updateCustomerProvider(customerProvider),
         ),
         ChangeNotifierProxyProvider<DatabaseService, DashboardProvider>(
           create: (context) =>
               DashboardProvider(context.read<DatabaseService>()),
-          update: (_, db, previous) => previous!..updateDbService(db),
-        ),
-        ChangeNotifierProxyProvider<DatabaseService, CustomerProvider>(
-          create: (context) =>
-              CustomerProvider(context.read<DatabaseService>()),
           update: (_, db, previous) => previous!..updateDbService(db),
         ),
         ChangeNotifierProxyProvider<DatabaseService, SettingsProvider>(
@@ -146,6 +147,20 @@ class MainNavigationPageState extends State<MainNavigationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    final settings = Provider.of<SettingsProvider>(context);
+    final customer = Provider.of<CustomerProvider>(context);
+
+    final showLoading = auth.isInitializing || 
+        auth.user == null ||
+        settings.isLoading || 
+        settings.settings == null || 
+        !customer.hasLoadedOnce;
+
+    if (showLoading) {
+      return const AppLoadingScreen();
+    }
+
     return Scaffold(
       body: Center(
         child: _pages.elementAt(_selectedIndex),
@@ -178,6 +193,99 @@ class MainNavigationPageState extends State<MainNavigationPage> {
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.pink,
         onTap: _onItemTapped,
+      ),
+    );
+  }
+}
+
+class AppLoadingScreen extends StatelessWidget {
+  const AppLoadingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.pink.shade400,
+              Colors.pink.shade600,
+              Colors.purple.shade800,
+            ],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon Container with Glow
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.spa_outlined,
+                  size: 64,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // App Name
+              const Text(
+                'My Salon',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Subtitle
+              Text(
+                'Managing Your Success',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.7),
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const SizedBox(height: 48),
+              // Premium Linear Progress Bar
+              SizedBox(
+                width: 220,
+                height: 6,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.all(Radius.circular(10)),
+                  child: LinearProgressIndicator(
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Loading Text
+              Text(
+                'Initializing salon data...',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withOpacity(0.5),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

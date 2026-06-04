@@ -206,7 +206,7 @@ class SettingsPage extends StatelessWidget {
 
   Widget _buildServiceMenuSection(BuildContext context, SettingsProvider provider) {
     final services = provider.settings!.predefinedServices;
-    final businessConfig = provider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+    final businessConfig = provider.settings?.businessConfig ?? BusinessConfig(businessName: 'My Salon', currencySymbol: '\$');
 
     return Card(
       elevation: 0,
@@ -307,7 +307,7 @@ class SettingsPage extends StatelessWidget {
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
             ElevatedButton(
               onPressed: () {
-                final newName = businessNameCtrl.text.isEmpty ? 'Hazel Nails' : businessNameCtrl.text;
+                final newName = businessNameCtrl.text.isEmpty ? 'My Salon' : businessNameCtrl.text;
 
                 void saveChanges() {
                   provider.updateBusinessConfig(BusinessConfig(
@@ -396,7 +396,7 @@ class SettingsPage extends StatelessWidget {
   }
 
   void _showEditServiceDialog(BuildContext context, SettingsProvider provider, ServiceItem? current, int index) {
-    final businessConfig = provider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+    final businessConfig = provider.settings?.businessConfig ?? BusinessConfig(businessName: 'My Salon', currencySymbol: '\$');
     final nameCtrl = TextEditingController(text: current?.serviceName ?? '');
     final priceCtrl = TextEditingController(text: current?.price.toString() ?? '');
 

@@ -66,7 +66,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
     final provider = Provider.of<InvoiceProvider>(context);
     final settingsProvider = Provider.of<SettingsProvider>(context);
     final bankConfig = settingsProvider.settings?.bankConfig;
-    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'My Salon', currencySymbol: '\$');
     
     final currencyFormat = NumberFormat.decimalPattern();
     

@@ -19,6 +19,7 @@ class CustomerProvider extends ChangeNotifier {
     _searchResults = [];
     _selectedCustomer = null;
     _customerInvoices = [];
+    _hasLoadedOnce = false;
     
     // Only load if we have a valid userId
     if (newService.userId != null) {
@@ -32,6 +33,7 @@ class CustomerProvider extends ChangeNotifier {
   List<Customer> _searchResults = [];
   bool _isLoading = false;
   final bool _isSearching = false;
+  bool _hasLoadedOnce = false;
 
   Customer? _selectedCustomer;
   List<Invoice> _customerInvoices = [];
@@ -44,18 +46,23 @@ class CustomerProvider extends ChangeNotifier {
   List<Customer> get searchResults => _searchResults;
   bool get isLoading => _isLoading;
   bool get isSearching => _isSearching;
+  bool get hasLoadedOnce => _hasLoadedOnce;
   Customer? get selectedCustomer => _selectedCustomer;
   List<Invoice> get customerInvoices => _customerInvoices;
   bool get isLoadingDetails => _isLoadingDetails;
   bool get isUploadingPhoto => _isUploadingPhoto;
   String? get uploadError => _uploadError;
 
-  Future<void> loadCustomers() async {
+  Future<void> loadCustomers({bool force = false}) async {
+    if (_hasLoadedOnce && !force) {
+      return;
+    }
     _isLoading = true;
     notifyListeners();
     try {
       _allCustomers = await _dbService.getCustomers();
       _searchResults = [];
+      _hasLoadedOnce = true;
     } catch (e) {
       debugPrint('Error loading customers: $e');
     } finally {
@@ -206,10 +213,21 @@ class CustomerProvider extends ChangeNotifier {
     }
   }
 
+  void addCustomerLocally(Customer customer) {
+    _allCustomers.add(customer);
+    notifyListeners();
+  }
+
   Future<void> updateCustomer(String id, String name, String phone) async {
     try {
       await _dbService.updateCustomer(id, name, phone);
       await loadCustomerDetails(id);
+
+      final index = _allCustomers.indexWhere((c) => c.id == id);
+      if (index != -1) {
+        _allCustomers[index] = _allCustomers[index].copyWith(name: name, phone: phone);
+      }
+      notifyListeners();
     } catch (e) {
       debugPrint('Error updating customer: $e');
       rethrow;

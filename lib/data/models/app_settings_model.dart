@@ -14,8 +14,8 @@ class BusinessConfig {
 
   factory BusinessConfig.fromMap(Map<String, dynamic> map) {
     return BusinessConfig(
-      businessName: map['business_name'] ?? 'Hazel Nails',
-      currencySymbol: map['currency_symbol'] ?? 'k',
+      businessName: map['business_name'] ?? 'My Salon',
+      currencySymbol: map['currency_symbol'] ?? '\$',
     );
   }
 
@@ -88,8 +88,8 @@ class AppSettings {
   factory AppSettings.defaultSettings() {
     return AppSettings(
       businessConfig: BusinessConfig(
-        businessName: 'Hazel Nails',
-        currencySymbol: 'k',
+        businessName: 'My Salon',
+        currencySymbol: '\$',
       ),
       bankConfig: BankConfig(
         bankName: '',

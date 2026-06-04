@@ -190,7 +190,7 @@ class _InvoiceTile extends StatelessWidget {
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
 
     final settingsProvider = Provider.of<SettingsProvider>(context);
-    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'My Salon', currencySymbol: '\$');
 
     String formatCurrency(num amount) {
       final formatted = format.format(amount);

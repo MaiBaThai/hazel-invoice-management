@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../../data/models/customer_model.dart';
 import '../../data/models/invoice_model.dart';
 import '../../data/services/database_service.dart';
+import 'customer_provider.dart';
 
 class InvoiceProvider extends ChangeNotifier {
   DatabaseService _dbService;
+  CustomerProvider? _customerProvider;
 
   InvoiceProvider(this._dbService);
 
@@ -12,6 +14,10 @@ class InvoiceProvider extends ChangeNotifier {
     debugPrint('InvoiceProvider: updateDbService called with userId: ${newService.userId}');
     _dbService = newService;
     reset(); // Clear local state when user identity potentially changes
+  }
+
+  void updateCustomerProvider(CustomerProvider customerProvider) {
+    _customerProvider = customerProvider;
   }
 
   Customer? _selectedCustomer;
@@ -30,22 +36,12 @@ class InvoiceProvider extends ChangeNotifier {
 
   List<Customer> _searchResults = [];
   bool _isSearching = false;
-  
-  List<Customer> _allCustomers = [];
-  bool _hasLoadedCustomers = false;
-
-  Future<void> _ensureCustomersLoaded() async {
-    if (!_hasLoadedCustomers) {
-      _allCustomers = await _dbService.getCustomers();
-      _hasLoadedCustomers = true;
-    }
-  }
 
   Customer? get selectedCustomer => _selectedCustomer;
   List<ServiceItem> get services => _services;
   double get discountPercent => _discountPercent;
   bool get isSaving => _isSaving;
-  bool get hasLoadedCustomers => _hasLoadedCustomers;
+  bool get hasLoadedCustomers => _customerProvider?.allCustomers.isNotEmpty ?? false;
   int get resetCounter => _resetCounter;
   bool get isEditing => _editingInvoiceId != null;
   List<Customer> get searchResults => _searchResults;
@@ -94,12 +90,11 @@ class InvoiceProvider extends ChangeNotifier {
     notifyListeners();
     
     try {
-      await _ensureCustomersLoaded();
-      
+      final allCustomers = _customerProvider?.allCustomers ?? [];
       final lowerQuery = trimmedQuery.toLowerCase();
       final normalizedQuery = _normalizeAndRemoveDiacritics(lowerQuery);
       
-      _searchResults = _allCustomers.where((customer) {
+      _searchResults = allCustomers.where((customer) {
         final nameLower = customer.name.toLowerCase();
         final normalizedName = _normalizeAndRemoveDiacritics(nameLower);
         final phoneMatch = customer.phone.contains(trimmedQuery);
@@ -135,8 +130,8 @@ class InvoiceProvider extends ChangeNotifier {
     _isSearching = true;
     notifyListeners();
     try {
-      await _ensureCustomersLoaded();
-      _searchResults = List.from(_allCustomers);
+      final allCustomers = _customerProvider?.allCustomers ?? [];
+      _searchResults = List.from(allCustomers);
     } finally {
       _isSearching = false;
       notifyListeners();
@@ -156,8 +151,8 @@ class InvoiceProvider extends ChangeNotifier {
       final newCustomer = customer.copyWith(id: id);
       _selectedCustomer = newCustomer;
       
-      // Add to cache so it's searchable immediately
-      _allCustomers.add(newCustomer);
+      // Add to shared cache so it's searchable immediately across all screens
+      _customerProvider?.addCustomerLocally(newCustomer);
       
       notifyListeners();
     } catch (e) {
@@ -308,7 +303,6 @@ class InvoiceProvider extends ChangeNotifier {
     _services = [];
     _discountPercent = 0;
     _searchResults = [];
-    _hasLoadedCustomers = false; // Reset cache to get fresh data on next search
     _editingInvoiceId = null;
     _originalTotal = 0;
     _editingPhotoUrls = [];
@@ -321,7 +315,6 @@ class InvoiceProvider extends ChangeNotifier {
 
   void clearSearchResults() {
     _searchResults = [];
-    _hasLoadedCustomers = false; // Reset cache for fresh data
     notifyListeners();
   }
 }

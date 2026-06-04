@@ -99,7 +99,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
     _syncWithProvider(provider);
 
     final settingsProvider = Provider.of<SettingsProvider>(context);
-    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'Hazel Nails', currencySymbol: 'k');
+    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'My Salon', currencySymbol: '\$');
     
     String formatCurrency(num amount) {
       final formatted = NumberFormat.decimalPattern().format(amount);
