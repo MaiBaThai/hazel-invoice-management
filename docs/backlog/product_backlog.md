@@ -74,6 +74,14 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [ ] **STORY-038**: As a user, I want the app to request native iOS permissions (camera/photo library) with descriptions and declare API usage in a Privacy Manifest.
 - [ ] **STORY-039**: As a user, I want the app UI to support iOS notch and home indicator safe areas.
 - [ ] **STORY-040**: As a developer, I want to build and submit the release app bundle to TestFlight for developer testing.
+## Changelogs - June 4, 2026
+### v1.12.0 - Shared Memory Cache, Loading Screen Loop/Flicker Fixes & Branding Defaults (2026-06-04)
+- **Shared Memory Customer Cache**: Optimized state performance by establishing `CustomerProvider.allCustomers` as the single source of truth, removing separate Firestore query triggers in `InvoiceProvider` and accelerating searches to run synchronously in-memory with zero database reads.
+- **Startup Loading Screen Optimization**: Resolved a startup flicker/flash where the `InvoicePage` would briefly show before anonymous auth finished silent login, by blocking UI render until the guest user session is fully established.
+- **Customers Tab Load Loop Resolution**: Resolved an infinite loading loop on tab switch by replacing the global `customer.isLoading` check with `!customer.hasLoadedOnce`. Tapping the Customers tab now returns early without re-fetching from Firestore if the list has already loaded once.
+- **Fallback Branding Customization**: Replaced default `"Hazel Nails"` branding and `"k"` currency fallbacks with `"My Salon"` and `"$"` currency globally across all screens and configs for a generic default experience.
+- **Unit and Integration Tests**: Staged, verified, and successfully ran all 8 unit and integration tests (including testing `"My Salon"` defaults).
+
 ## Changelogs - June 1, 2026
 ### v1.11.0 - Lazy Firestore Creation for Guest/Anonymous Users (2026-06-01)
 - **Lazy Account/Profile Creation**: Deferred creation of `users/{uid}` and default settings in Firestore for guest/anonymous users. They are now initialized dynamically only when they perform a real write action (e.g., adding a customer, invoice, or expense, or modifying settings).
