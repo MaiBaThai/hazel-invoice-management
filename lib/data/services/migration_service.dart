@@ -7,7 +7,9 @@ import '../models/expense_model.dart';
 import '../models/app_settings_model.dart';
 
 class MigrationService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
+  
+  MigrationService({FirebaseFirestore? firestore}) : _db = firestore ?? FirebaseFirestore.instance;
   
   /// Checks if a user is whitelisted for data migration or premium access.
   Future<bool> isUserWhitelisted(String email) async {
@@ -40,17 +42,17 @@ class MigrationService {
       // Convert to models first to fill in missing fields with defaults
       final customers = customersSnapshot.docs.map((doc) {
         final model = Customer.fromMap(doc.id, doc.data());
-        return {'id': doc.id, ..._prepareForJson(model.toMap())};
+        return <String, dynamic>{'id': doc.id, ...(_prepareForJson(model.toMap()) as Map<String, dynamic>)};
       }).toList();
 
       final invoices = invoicesSnapshot.docs.map((doc) {
         final model = Invoice.fromMap(doc.id, doc.data());
-        return {'id': doc.id, ..._prepareForJson(model.toMap())};
+        return <String, dynamic>{'id': doc.id, ...(_prepareForJson(model.toMap()) as Map<String, dynamic>)};
       }).toList();
 
       final expenses = expensesSnapshot.docs.map((doc) {
         final model = Expense.fromMap(doc.id, doc.data());
-        return {'id': doc.id, ..._prepareForJson(model.toMap())};
+        return <String, dynamic>{'id': doc.id, ...(_prepareForJson(model.toMap()) as Map<String, dynamic>)};
       }).toList();
 
       final List<Map<String, dynamic>> configs = [];
@@ -58,18 +60,18 @@ class MigrationService {
         if (doc.id == 'app_settings') {
           // Force use of AppSettings model to fill in missing fields from legacy data
           final settings = AppSettings.fromMap(doc.data());
-          configs.add({'id': doc.id, ..._prepareForJson(settings.toMap())});
+          configs.add(<String, dynamic>{'id': doc.id, ...(_prepareForJson(settings.toMap()) as Map<String, dynamic>)});
         } else {
-          configs.add({'id': doc.id, ..._prepareForJson(doc.data())});
+          configs.add(<String, dynamic>{'id': doc.id, ...(_prepareForJson(doc.data()) as Map<String, dynamic>)});
         }
       }
 
-      return {
+      return <String, dynamic>{
         'timestamp': DateTime.now().toIso8601String(),
         'version': '2.0.0', // New schema version
         'source': 'user_scoped_backup',
         'user_id': userId,
-        'data': {
+        'data': <String, dynamic>{
           'customers': customers,
           'invoices': invoices,
           'expenses': expenses,
@@ -98,8 +100,8 @@ class MigrationService {
 
   /// Imports data from a JSON Map into the specified target.
   Future<void> importDataFromJson(Map<String, dynamic> jsonData, {required String targetUserId}) async {
-    final db = DatabaseService(userId: targetUserId);
-    final data = jsonData['data'] as Map<String, dynamic>?;
+    final db = DatabaseService(userId: targetUserId, firestore: _db);
+    final Map<String, dynamic>? data = jsonData['data'] != null ? Map<String, dynamic>.from(jsonData['data'] as Map) : null;
 
     if (data == null) throw Exception('Invalid backup file: No data found');
 
@@ -204,7 +206,7 @@ class MigrationService {
 
       // 3. Delete Storage files
       try {
-        final storageRoot = DatabaseService(userId: userId).storageRoot;
+        final storageRoot = DatabaseService(userId: userId, firestore: _db).storageRoot;
         await _deleteStorageFolder(storageRoot);
       } catch (e) {
         debugPrint('Note: Error during storage cleanup (might be empty): $e');
