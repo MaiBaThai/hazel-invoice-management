@@ -23,98 +23,14 @@ class MigrationService {
     }
   }
 
-  /// Copies data from global collections to user-scoped collections without deleting.
-  Future<void> copyLegacyData(String userId) async {
-    final userScopedDb = DatabaseService(userId: userId);
-    final globalDb = DatabaseService(userId: null);
 
-    try {
-      debugPrint('Starting manual copy for user: $userId');
-
-      // 1. Copy Settings
-      final globalSettings = await globalDb.getSettings();
-      await userScopedDb.updateSettings(globalSettings);
-
-      // 2. Copy Customers
-      final customers = await globalDb.getCustomers();
-      for (var customer in customers) {
-        await userScopedDb.setCustomer(customer.id, customer);
-            }
-
-      // 3. Copy Invoices
-      final invoices = await globalDb.getInvoicesSince(DateTime(2020));
-      for (var invoice in invoices) {
-        await userScopedDb.setInvoice(invoice.id, invoice);
-            }
-
-      // 4. Copy Expenses
-      final expenses = await globalDb.getExpensesSince(DateTime(2020));
-      for (var expense in expenses) {
-        await userScopedDb.saveExpense(expense);
-            }
-
-      debugPrint('Data copied to user-scoped collections successfully.');
-    } catch (e) {
-      debugPrint('Copy failed: $e');
-      rethrow;
-    }
-  }
-
-  /// Deletes data from global collections after successful verification.
-  Future<void> deleteLegacyData() async {
-    try {
-      debugPrint('Starting cleanup of global records...');
-      
-      // 1. Cleanup Customers
-      final customers = await _db.collection('customers').get();
-      for (var doc in customers.docs) {
-        await doc.reference.delete();
-      }
-
-      // 2. Cleanup Invoices
-      final invoices = await _db.collection('invoices').get();
-      for (var doc in invoices.docs) {
-        await doc.reference.delete();
-      }
-
-      // 3. Cleanup Expenses
-      final expenses = await _db.collection('expenses').get();
-      for (var doc in expenses.docs) {
-        await doc.reference.delete();
-      }
-
-      debugPrint('Global records cleaned up successfully.');
-    } catch (e) {
-      debugPrint('Cleanup failed: $e');
-      rethrow;
-    }
-  }
-
-  /// Marks migration as completed for a specific user
-  Future<void> markAsCompleted(String userId) async {
-    await _db.collection('users').doc(userId).set({
-      'migration_status': {
-        'completed': true,
-        'timestamp': FieldValue.serverTimestamp(),
-        'source': 'manual_migration_v1.5.0',
-      }
-    }, SetOptions(merge: true));
-  }
-
-  /// Checks if the user has already migrated data.
-  Future<bool> hasAlreadyMigrated(String userId) async {
-    final doc = await _db.collection('users').doc(userId).get();
-    return doc.data()?['migration_status']?['completed'] == true;
-  }
   /// Exports data from collections as a JSON-serializable Map.
-  /// If [userId] is provided, it exports from user-scoped collections.
-  /// If [userId] is null, it exports from global root collections (Admin only).
-  Future<Map<String, dynamic>> exportData({String? userId}) async {
+  Future<Map<String, dynamic>> exportData({required String userId}) async {
     try {
-      final customersRef = userId == null ? _db.collection('customers') : _db.collection('users').doc(userId).collection('customers');
-      final invoicesRef = userId == null ? _db.collection('invoices') : _db.collection('users').doc(userId).collection('invoices');
-      final expensesRef = userId == null ? _db.collection('expenses') : _db.collection('users').doc(userId).collection('expenses');
-      final configsRef = userId == null ? _db.collection('configs') : _db.collection('users').doc(userId).collection('configs');
+      final customersRef = _db.collection('users').doc(userId).collection('customers');
+      final invoicesRef = _db.collection('users').doc(userId).collection('invoices');
+      final expensesRef = _db.collection('users').doc(userId).collection('expenses');
+      final configsRef = _db.collection('users').doc(userId).collection('configs');
 
       final customersSnapshot = await customersRef.get();
       final invoicesSnapshot = await invoicesRef.get();
@@ -151,7 +67,7 @@ class MigrationService {
       return {
         'timestamp': DateTime.now().toIso8601String(),
         'version': '2.0.0', // New schema version
-        'source': userId == null ? 'root_collections_backup' : 'user_scoped_backup',
+        'source': 'user_scoped_backup',
         'user_id': userId,
         'data': {
           'customers': customers,
@@ -180,8 +96,8 @@ class MigrationService {
     return value;
   }
 
-  /// Imports data from a JSON Map into the specified target (Root or Scoped).
-  Future<void> importDataFromJson(Map<String, dynamic> jsonData, {String? targetUserId}) async {
+  /// Imports data from a JSON Map into the specified target.
+  Future<void> importDataFromJson(Map<String, dynamic> jsonData, {required String targetUserId}) async {
     final db = DatabaseService(userId: targetUserId);
     final data = jsonData['data'] as Map<String, dynamic>?;
 

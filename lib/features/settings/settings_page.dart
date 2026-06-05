@@ -38,10 +38,7 @@ class SettingsPage extends StatelessWidget {
             const SizedBox(height: 32),
             _buildDataManagementSection(context, authProvider),
           ],
-          if (authProvider.user?.email == 'thai.maiba1984@gmail.com') ...[
-            const SizedBox(height: 32),
-            _buildAdminMigrationSection(context, authProvider),
-          ],
+
           const SizedBox(height: 32),
           _buildBusinessConfigSection(context, provider),
           if (provider.settings!.businessConfig.enableVietQR) ...[
@@ -566,71 +563,11 @@ class SettingsPage extends StatelessWidget {
     }
   }
 
-  Widget _buildAdminMigrationSection(BuildContext context, AuthProvider auth) {
-    return Card(
-      elevation: 0,
-      color: Colors.orange.withOpacity(0.05),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Colors.orange),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.admin_panel_settings, color: Colors.orange),
-                SizedBox(width: 8),
-                Text('Admin: Migration Tools', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Advanced tools for global data migration and cleanup.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _handleManualCopy(context, auth),
-                    icon: const Icon(Icons.copy, size: 16),
-                    label: const Text('STEP 1: COPY', style: TextStyle(fontSize: 11)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _handleManualCleanup(context, auth),
-                    icon: const Icon(Icons.delete_forever, size: 16),
-                    label: const Text('STEP 2: CLEANUP', style: TextStyle(fontSize: 11)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _handleBackup(BuildContext context, AuthProvider auth) async {
-    final bool isAdmin = auth.user?.email == 'thai.maiba1984@gmail.com';
     if (auth.isAnonymous) return;
 
     try {
-      final data = await auth.migrationService.exportData(userId: isAdmin ? null : auth.user!.uid);
+      final data = await auth.migrationService.exportData(userId: auth.user!.uid);
       final jsonString = const JsonEncoder.withIndent('  ').convert(data);
       
       if (kIsWeb) {
@@ -669,44 +606,29 @@ class SettingsPage extends StatelessWidget {
       return;
     }
 
-    final bool isAdmin = auth.user?.email == 'thai.maiba1984@gmail.com';
     web_helper.uploadBackupWeb(
       onSuccess: (jsonData) async {
         if (!context.mounted) return;
 
-        String? targetUid;
-        bool confirmed = false;
-
-        if (isAdmin) {
-          final target = await _showAdminRestoreDialog(context);
-          if (target != null) {
-            targetUid = target == 'ROOT' ? null : target;
-            confirmed = true;
-          }
-        } else {
-          confirmed = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Confirm Restore'),
-              content: const Text('This will PERMANENTLY overwrite all your current data with the contents of the JSON file. This action cannot be undone. Proceed?'),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true), 
-                  child: const Text('RESTORE NOW', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-          ) ?? false;
-          if (confirmed) {
-            targetUid = auth.user!.uid;
-          }
-        }
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Confirm Restore'),
+            content: const Text('This will PERMANENTLY overwrite all your current data with the contents of the JSON file. This action cannot be undone. Proceed?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true), 
+                child: const Text('RESTORE NOW', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ) ?? false;
 
         if (confirmed && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restoring data... Please wait.')));
           try {
-            await auth.migrationService.importDataFromJson(jsonData, targetUserId: targetUid);
+            await auth.migrationService.importDataFromJson(jsonData, targetUserId: auth.user!.uid);
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restore successful!')));
             }
@@ -723,116 +645,6 @@ class SettingsPage extends StatelessWidget {
         }
       },
     );
-  }
-
-  Future<String?> _showAdminRestoreDialog(BuildContext context) async {
-    final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Admin: Restore Data'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Where do you want to restore the data?'),
-            const SizedBox(height: 16),
-            ListTile(
-              title: const Text('Restore to ROOT'),
-              subtitle: const Text('LEGACY mode (global collections)'),
-              onTap: () => Navigator.pop(context, 'ROOT'),
-            ),
-            const Divider(),
-            const Text('Or enter a specific Target UID:'),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'Target UID',
-                hintText: 'e.g., qsV6v...',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('RESTORE TO UID'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _handleManualCopy(BuildContext context, AuthProvider auth) async {
-    final controller = TextEditingController(text: auth.user?.uid);
-    
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Step 1: Copy Data'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Enter the Target User UID to receive the legacy data:'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'Target UID',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text('Note: Data will be COPIED. No data is deleted yet.', style: TextStyle(fontSize: 12, color: Colors.grey)),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('COPY DATA')),
-        ],
-      ),
-    );
-
-    if (confirmed == true && controller.text.isNotEmpty) {
-      try {
-        await auth.migrationService.copyLegacyData(controller.text.trim());
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copy to ${controller.text} completed!')));
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copy failed: $e')));
-        }
-      }
-    }
-  }
-
-  Future<void> _handleManualCleanup(BuildContext context, AuthProvider auth) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Step 2: Cleanup Root'),
-        content: const Text('WARNING: This will PERMANENTLY DELETE all legacy data from the root collections. ONLY do this if you have verified the migration was successful. Proceed?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('DELETE ROOT DATA', style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        await auth.migrationService.deleteLegacyData();
-        await auth.migrationService.markAsCompleted(auth.user!.uid);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cleanup completed! Root data is now empty.')));
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Cleanup failed: $e')));
-        }
-      }
-    }
   }
 
   Widget _buildDangerZoneSection(BuildContext context, AuthProvider auth) {
