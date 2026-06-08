@@ -10,6 +10,7 @@ import '../../data/models/invoice_model.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../core/utils/web_helper.dart' as web_helper;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -477,6 +478,27 @@ class SettingsPage extends StatelessWidget {
             ),
             if (auth.isAnonymous) ...[
               const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+
+              // 1. SIGN-UP (Link Current Data)
+              const Text(
+                'CREATE ACCOUNT (Sign Up & Sync)',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.pink,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Link your current local customers and invoices to a new cloud account so they are saved securely.',
+                style: TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+              const SizedBox(height: 12),
+
+              // Google Sign-Up Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -505,9 +527,59 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ),
               ),
+
+              // Apple Sign-Up Button (iOS only)
+              if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+                const SizedBox(height: 8),
+                SignInWithAppleButton(
+                  onPressed: () async {
+                    try {
+                      await auth.signInWithApple();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Account linked successfully with Apple!')),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Link failed. If you already have an account, use Sign In below.')),
+                        );
+                      }
+                    }
+                  },
+                  text: 'Sign up with Apple',
+                  style: SignInWithAppleButtonStyle.black,
+                  borderRadius: BorderRadius.circular(8),
+                  height: 40,
+                ),
+              ],
+
+              const SizedBox(height: 20),
+              const Divider(),
               const SizedBox(height: 8),
-              Center(
-                child: TextButton(
+
+              // 2. SIGN-IN (Switch to Existing Account)
+              const Text(
+                'ALREADY HAVE AN ACCOUNT? (Sign In)',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Log in to retrieve your existing cloud-saved data. Note: Current local data will be replaced.',
+                style: TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+              const SizedBox(height: 12),
+
+              // Google Sign-In Button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
                   onPressed: () async {
                     try {
                       await auth.signInWithGoogleDirectly();
@@ -519,9 +591,35 @@ class SettingsPage extends StatelessWidget {
                       }
                     }
                   },
-                  child: const Text('ALREADY HAVE AN ACCOUNT? SIGN IN'),
+                  icon: const Icon(Icons.login),
+                  label: const Text('SIGN IN WITH GOOGLE'),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
                 ),
               ),
+
+              // Apple Sign-In Button (iOS only)
+              if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+                const SizedBox(height: 8),
+                SignInWithAppleButton(
+                  onPressed: () async {
+                    try {
+                      await auth.signInWithAppleDirectly();
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Login failed: $e')),
+                        );
+                      }
+                    }
+                  },
+                  text: 'Sign in with Apple',
+                  style: SignInWithAppleButtonStyle.black,
+                  borderRadius: BorderRadius.circular(8),
+                  height: 40,
+                ),
+              ],
             ] else ...[
               const SizedBox(height: 16),
               SizedBox(

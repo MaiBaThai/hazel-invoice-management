@@ -39,7 +39,14 @@ class DashboardProvider extends ChangeNotifier {
   DatabaseService _dbService;
   DashboardProvider(this._dbService);
 
+  bool _hasLoadedOnce = false;
+  bool get hasLoadedOnce => _hasLoadedOnce;
+
   void updateDbService(DatabaseService newService) {
+    if (_dbService.userId == newService.userId && _hasLoadedOnce) {
+      _dbService = newService;
+      return;
+    }
     debugPrint('DashboardProvider: updateDbService called with userId: ${newService.userId}');
     _dbService = newService;
     _resetStats();
@@ -61,6 +68,7 @@ class DashboardProvider extends ChangeNotifier {
     _topServices = [];
     _heatMapData = List.generate(7, (_) => List.filled(5, 0));
     _selectedRange = DashboardRange.fourteenDays;
+    _hasLoadedOnce = false;
     notifyListeners();
   }
 
@@ -129,6 +137,7 @@ class DashboardProvider extends ChangeNotifier {
       _allExpenses = results[1] as List<Expense>;
       
       _calculateStats(_allInvoices, _allExpenses, DateTime.now());
+      _hasLoadedOnce = true;
     } catch (e) {
       debugPrint('Error loading dashboard data: $e');
     } finally {

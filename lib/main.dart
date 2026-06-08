@@ -152,10 +152,10 @@ class MainNavigationPageState extends State<MainNavigationPage> {
     final customer = Provider.of<CustomerProvider>(context);
 
     final showLoading = auth.isInitializing || 
-        auth.user == null ||
+        (auth.user == null && !auth.hasError) ||
         settings.isLoading || 
         settings.settings == null || 
-        !customer.hasLoadedOnce;
+        (!customer.hasLoadedOnce && !customer.hasError);
 
     if (showLoading) {
       return const AppLoadingScreen();

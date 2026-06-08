@@ -7,6 +7,10 @@ class ExpenseProvider with ChangeNotifier {
   ExpenseProvider(this._db);
 
   void updateDbService(DatabaseService newService) {
+    if (_db.userId == newService.userId) {
+      _db = newService;
+      return;
+    }
     _db = newService;
     reset(); // Clear local state when user identity potentially changes
   }

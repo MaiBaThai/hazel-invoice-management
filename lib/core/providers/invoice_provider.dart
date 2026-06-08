@@ -11,6 +11,10 @@ class InvoiceProvider extends ChangeNotifier {
   InvoiceProvider(this._dbService);
 
   void updateDbService(DatabaseService newService) {
+    if (_dbService.userId == newService.userId) {
+      _dbService = newService;
+      return;
+    }
     debugPrint('InvoiceProvider: updateDbService called with userId: ${newService.userId}');
     _dbService = newService;
     reset(); // Clear local state when user identity potentially changes

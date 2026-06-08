@@ -3,6 +3,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:nms/data/services/database_service.dart';
 import 'package:nms/data/models/customer_model.dart';
 import 'package:nms/data/models/app_settings_model.dart';
+import 'package:nms/data/models/invoice_model.dart';
 
 void main() {
   group('DatabaseService - Lazy Firestore Creation Tests', () {
@@ -135,6 +136,56 @@ void main() {
           .get();
       expect(settingsDoc.exists, isTrue);
       expect(settingsDoc.data()?['business_config']?['business_name'], equals('Custom Salon Name'));
+    });
+
+    test('Saving first invoice should automatically create default settings if they do not exist', () async {
+      final dbService = DatabaseService(
+        userId: 'invoice_user_123',
+        isAnonymous: false,
+        firestore: fakeDb,
+      );
+
+      // Create a customer first since customer validation happens inside saveInvoice
+      final customer = Customer(
+        id: 'cust_abc',
+        name: 'John Test',
+        phone: '5551234',
+        totalSpent: 0.0,
+      );
+      await dbService.setCustomer('cust_abc', customer);
+
+      // Verify settings doc does NOT exist yet
+      final settingsDocBefore = await fakeDb
+          .collection('users')
+          .doc('invoice_user_123')
+          .collection('configs')
+          .doc('app_settings')
+          .get();
+      expect(settingsDocBefore.exists, isFalse);
+
+      // Save an invoice
+      final invoice = Invoice(
+        id: '',
+        customerId: 'cust_abc',
+        customerName: 'John Test',
+        createdAt: DateTime.now(),
+        services: [],
+        subtotal: 100.0,
+        discountPercent: 0.0,
+        finalTotal: 100.0,
+        photoUrls: [],
+      );
+      await dbService.saveInvoice(invoice);
+
+      // Verify settings doc is now created automatically
+      final settingsDocAfter = await fakeDb
+          .collection('users')
+          .doc('invoice_user_123')
+          .collection('configs')
+          .doc('app_settings')
+          .get();
+      expect(settingsDocAfter.exists, isTrue);
+      expect(settingsDocAfter.data()?['business_config']?['business_name'], equals('My Salon'));
     });
   });
 }

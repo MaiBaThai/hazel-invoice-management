@@ -6,7 +6,7 @@ void downloadBackupWeb(String jsonString, String fileName) {
   final bytes = utf8.encode(jsonString);
   final blob = html.Blob([bytes]);
   final url = html.Url.createObjectUrlFromBlob(blob);
-  final anchor = html.AnchorElement(href: url)
+  html.AnchorElement(href: url)
     ..setAttribute("download", fileName)
     ..click();
   html.Url.revokeObjectUrl(url);
@@ -41,7 +41,7 @@ void uploadBackupWeb({
 void downloadInvoiceImageWeb(List<int> pngBytes, String fileName) {
   final blob = html.Blob([pngBytes], 'image/png');
   final url = html.Url.createObjectUrlFromBlob(blob);
-  final anchor = html.AnchorElement(href: url)
+  html.AnchorElement(href: url)
     ..setAttribute("download", fileName)
     ..click();
   html.Url.revokeObjectUrl(url);

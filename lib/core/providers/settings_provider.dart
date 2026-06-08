@@ -8,6 +8,10 @@ class SettingsProvider extends ChangeNotifier {
   SettingsProvider(this._dbService);
 
   void updateDbService(DatabaseService newService) {
+    if (_dbService.userId == newService.userId && _settings != null) {
+      _dbService = newService;
+      return;
+    }
     debugPrint('SettingsProvider: updateDbService called with userId: ${newService.userId}');
     _dbService = newService;
     
@@ -43,7 +47,7 @@ class SettingsProvider extends ChangeNotifier {
       final results = await Future.wait([
         _dbService.syncUser(),
         _dbService.getSettings(),
-      ]).timeout(const Duration(seconds: 10));
+      ]).timeout(const Duration(seconds: 5));
       
       _settings = results[1] as AppSettings;
     } catch (e) {

@@ -189,6 +189,12 @@ class DatabaseService {
         throw Exception('Customer with ID ${invoice.customerId} does not exist. They may have been deleted.');
       }
 
+      // Check if Settings exist, if not set default settings
+      final settingsDoc = await transaction.get(_settingsRef);
+      if (!settingsDoc.exists) {
+        transaction.set(_settingsRef, AppSettings.defaultSettings().toMap());
+      }
+
       // 2. Create Invoice Document
       transaction.set(invoiceRef, invoice.toMap());
 

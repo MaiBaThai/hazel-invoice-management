@@ -39,11 +39,11 @@ gantt
 - [x] **Task 1.3**: Configure Xcode build phases to copy the correct `GoogleService-Info.plist` (Dev vs Prod) based on the target build configuration.
 - [x] **Task 1.4**: Run FlutterFire CLI or update `lib/firebase_options_dev.dart` and `lib/firebase_options_prod.dart` to include the respective iOS App credentials.
 
-### Epic 2: Sign in with Apple & App Store Compliance
-- **Task 2.1**: Add `sign_in_with_apple` plugin to [pubspec.yaml](file:///Users/maibathai/Documents/Personal/invoice/pubspec.yaml).
-- **Task 2.2**: Enable "Sign in with Apple" capability in the App ID identifier and Xcode project settings.
-- **Task 2.3**: Update [auth_provider.dart](file:///Users/maibathai/Documents/Personal/invoice/lib/core/providers/auth_provider.dart) with the Sign in with Apple authentication flow (linking credentials if the current session is anonymous, or signing in directly).
-- **Task 2.4**: Update the UI to display the Sign in with Apple button on iOS devices.
+### Epic 2: Sign in with Apple & App Store Compliance [DONE]
+- [x] **Task 2.1**: Add `sign_in_with_apple` plugin to [pubspec.yaml](file:///Users/maibathai/Documents/Personal/invoice/pubspec.yaml).
+- [x] **Task 2.2**: Enable "Sign in with Apple" capability in the App ID identifier and Xcode project settings.
+- [x] **Task 2.3**: Update [auth_provider.dart](file:///Users/maibathai/Documents/Personal/invoice/lib/core/providers/auth_provider.dart) with the Sign in with Apple authentication flow (linking credentials if the current session is anonymous, or signing in directly).
+- [x] **Task 2.4**: Update the UI to display the Sign in with Apple button on iOS devices.
 
 ### Epic 3: iOS Native Configurations, Permissions & Assets
 - **Task 3.1**: Configure [Info.plist](file:///Users/maibathai/Documents/Personal/invoice/ios/Runner/Info.plist) with required permission descriptions for photo library and camera:

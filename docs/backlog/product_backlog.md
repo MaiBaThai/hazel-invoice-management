@@ -70,10 +70,26 @@ This document outlines the features and user stories for the NMS, prioritized fo
 *Goal: Port the application to iOS, align configurations, ensure App Store compliance, and submit to TestFlight.*
 
 - [x] **STORY-036**: As a developer, I want to separate development and production iOS settings (schemes, Bundle IDs, Info.plists, and GoogleService-Info.plists) to avoid wrong configurations.
-- [ ] **STORY-037**: As a user, I want to sign in using Apple Authentication on iOS devices for compliance.
+- [x] **STORY-037**: As a user, I want to sign in using Apple Authentication on iOS devices for compliance.
 - [ ] **STORY-038**: As a user, I want the app to request native iOS permissions (camera/photo library) with descriptions and declare API usage in a Privacy Manifest.
 - [ ] **STORY-039**: As a user, I want the app UI to support iOS notch and home indicator safe areas.
 - [ ] **STORY-040**: As a developer, I want to build and submit the release app bundle to TestFlight for developer testing.
+## Changelogs - June 8, 2026
+### v1.13.0 - Epic 2: Apple Sign-In & App Store Compliance (2026-06-08)
+- **Apple Sign-In Integration**: Added full native "Sign in with Apple" support on iOS devices using the official `SignInWithAppleButton` widget for strict App Store guideline compliance, utilizing cryptographically secure SHA-256 nonces.
+- **Interactive Account Linking**: Resolved a stale client cache issue where successful Apple or Google credential linking did not refresh the UI, by immediately capturing the updated `User` object from the linking transaction and calling `notifyListeners()`.
+- **First-Invoice Settings Persistence**: Implemented automatic settings initialization on Firestore when the first invoice is saved by the user (anonymous or registered). This locks in their active default settings (e.g. USD currency, business name) to prevent future codebase updates from overriding their preferences.
+- **Unit & Integration Tests**: Expanded the test suite in `test/auth_provider_test.dart` and `test/database_service_test.dart` to cover the linking logic, mocking, and automatic default settings creation workflows. All 15 tests pass.
+- **Deployments**: Compiled and deployed the latest changes to the development Firebase Hosting environment (`invocie-management.web.app`).
+
+## Changelogs - June 7, 2026
+### v1.12.1 - Non-Blocking Logout, Query Timeouts & Loader Recovery (2026-06-07)
+- **Non-Blocking Google Sign-Out**: Fixed an indefinite loading screen hang during logout on web by running the Google Sign-Out SDK asynchronously without awaiting it, preventing restrictions on third-party cookies or frames from blocking the auth pipeline.
+- **Query Timeouts & Error States**: Implemented 5-second timeouts in `CustomerProvider` and `SettingsProvider` queries to prevent the app from freezing on slow or stalled network operations. Added robust `hasError` state properties to gracefully handle failures.
+- **Loader Bypass on Provider Errors**: Updated the startup loader in `main.dart` to bypass the persistent loading overlay if initialization or query actions fail, ensuring fallback guest access or showing appropriate UI instead of hanging.
+- **Automated Verification**: Created a comprehensive mock/unit test suite in `test/customer_provider_error_test.dart` to verify error lifecycles, and successfully ran the entire test suite.
+- **Production Deployments**: Deployed the compiled release build to the production environment (`invoices-management-c4ef0.web.app`).
+
 ## Changelogs - June 4, 2026
 ### v1.12.0 - Shared Memory Cache, Loading Screen Loop/Flicker Fixes & Branding Defaults (2026-06-04)
 - **Shared Memory Customer Cache**: Optimized state performance by establishing `CustomerProvider.allCustomers` as the single source of truth, removing separate Firestore query triggers in `InvoiceProvider` and accelerating searches to run synchronously in-memory with zero database reads.

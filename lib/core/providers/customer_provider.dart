@@ -13,6 +13,10 @@ class CustomerProvider extends ChangeNotifier {
   CustomerProvider(this._dbService);
 
   void updateDbService(DatabaseService newService) {
+    if (_dbService.userId == newService.userId && _hasLoadedOnce) {
+      _dbService = newService;
+      return;
+    }
     debugPrint('CustomerProvider: updateDbService called with userId: ${newService.userId}');
     _dbService = newService;
     _allCustomers = [];
@@ -20,6 +24,7 @@ class CustomerProvider extends ChangeNotifier {
     _selectedCustomer = null;
     _customerInvoices = [];
     _hasLoadedOnce = false;
+    _hasError = false;
     
     // Only load if we have a valid userId
     if (newService.userId != null) {
@@ -34,6 +39,7 @@ class CustomerProvider extends ChangeNotifier {
   bool _isLoading = false;
   final bool _isSearching = false;
   bool _hasLoadedOnce = false;
+  bool _hasError = false;
 
   Customer? _selectedCustomer;
   List<Invoice> _customerInvoices = [];
@@ -47,6 +53,7 @@ class CustomerProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSearching => _isSearching;
   bool get hasLoadedOnce => _hasLoadedOnce;
+  bool get hasError => _hasError;
   Customer? get selectedCustomer => _selectedCustomer;
   List<Invoice> get customerInvoices => _customerInvoices;
   bool get isLoadingDetails => _isLoadingDetails;
@@ -58,13 +65,15 @@ class CustomerProvider extends ChangeNotifier {
       return;
     }
     _isLoading = true;
+    _hasError = false;
     notifyListeners();
     try {
-      _allCustomers = await _dbService.getCustomers();
+      _allCustomers = await _dbService.getCustomers().timeout(const Duration(seconds: 5));
       _searchResults = [];
       _hasLoadedOnce = true;
     } catch (e) {
       debugPrint('Error loading customers: $e');
+      _hasError = true;
     } finally {
       _isLoading = false;
       notifyListeners();

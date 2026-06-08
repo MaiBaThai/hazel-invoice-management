@@ -237,7 +237,7 @@ class DailyDetailsDialog extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Daily Revenue', style: TextStyle(fontSize: 13, color: Colors.grey)),
+              const Text('Total Revenue', style: TextStyle(fontSize: 13, color: Colors.grey)),
               Text(formatCurrency(revenue), style: const TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
@@ -245,7 +245,7 @@ class DailyDetailsDialog extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Daily Expenses', style: TextStyle(fontSize: 13, color: Colors.grey)),
+              const Text('Total Expenses', style: TextStyle(fontSize: 13, color: Colors.grey)),
               Text('-${formatCurrency(expenses)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
             ],
           ),
