@@ -16,14 +16,19 @@ import 'firebase_options_dev.dart' as dev;
 import 'firebase_options_prod.dart' as prod;
 import 'package:nms/data/services/database_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/services.dart' show appFlavor;
 
 final GlobalKey<MainNavigationPageState> mainNavKey =
     GlobalKey<MainNavigationPageState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  const String environment =
-      String.fromEnvironment('ENVIRONMENT', defaultValue: 'dev');
+  
+  // Determine environment from --dart-define=ENVIRONMENT, fallback to build flavor, default to 'dev'
+  const String definedEnv = String.fromEnvironment('ENVIRONMENT');
+  final String environment = definedEnv.isNotEmpty 
+      ? definedEnv 
+      : (appFlavor ?? 'dev');
 
   try {
     if (Firebase.apps.isEmpty) {

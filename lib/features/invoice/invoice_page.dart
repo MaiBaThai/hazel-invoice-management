@@ -98,23 +98,26 @@ class _InvoicePageState extends State<InvoicePage> {
       return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          children: [
-            Text(businessConfig.businessName, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const Text('v1.3.7', style: TextStyle(fontSize: 10, color: Colors.grey)),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Column(
+            children: [
+              Text(businessConfig.businessName, style: const TextStyle(fontWeight: FontWeight.bold)),
+              const Text('v1.3.7', style: TextStyle(fontSize: 10, color: Colors.grey)),
+            ],
+          ),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => _handleReset(provider),
+            ),
           ],
         ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _handleReset(provider),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
+        body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,7 +350,7 @@ class _InvoicePageState extends State<InvoicePage> {
           ],
         ),
       ),
-    );
+    ),);
   }
 }
 

@@ -273,12 +273,28 @@ class InvoiceProvider extends ChangeNotifier {
             const SnackBar(content: Text('Invoice updated successfully!')),
           );
         }
+        
+        // Update customer total spent locally
+        final difference = finalTotal - _originalTotal;
+        _customerProvider?.updateCustomerTotalSpent(invoice.customerId, difference, invoice.createdAt);
       } else {
         invoiceId = await _dbService.saveInvoice(invoice);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Invoice saved successfully!')),
           );
+        }
+        
+        // Update customer total spent locally
+        _customerProvider?.updateCustomerTotalSpent(invoice.customerId, finalTotal, invoice.createdAt);
+      }
+
+      if (invoiceId != null && _customerProvider != null) {
+        // Trigger a background silent refresh of the customer list
+        _customerProvider!.loadCustomers(force: true, showLoader: false);
+        // If the currently viewed customer details page is open for this customer, reload details to update invoice list/spent total
+        if (_customerProvider!.selectedCustomer?.id == invoice.customerId) {
+          _customerProvider!.loadCustomerDetails(invoice.customerId);
         }
       }
       return invoiceId;

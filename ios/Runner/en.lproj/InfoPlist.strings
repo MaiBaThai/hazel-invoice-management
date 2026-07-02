@@ -1,0 +1,2 @@
+"NSCameraUsageDescription" = "Allow camera access to capture product photos for invoices";
+"NSPhotoLibraryUsageDescription" = "Allow photo library access to select product photos for invoices";

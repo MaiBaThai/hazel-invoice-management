@@ -7,6 +7,9 @@ import '../../core/providers/settings_provider.dart';
 import '../../data/models/app_settings_model.dart';
 import '../invoice/widgets/invoice_summary_dialog.dart';
 
+import 'package:image_picker/image_picker.dart';
+import '../../core/utils/ui_helper.dart';
+
 class CustomerDetailPage extends StatefulWidget {
   final String customerId;
 
@@ -182,7 +185,12 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
                             label: const Text('View Receipt'),
                           ),
                           TextButton.icon(
-                            onPressed: () => provider.uploadPhotoForInvoice(invoice.id, widget.customerId),
+                            onPressed: () async {
+                              final source = await showImageSourceSheet(context);
+                              if (source != null && context.mounted) {
+                                provider.uploadPhotoForInvoice(invoice.id, widget.customerId, source);
+                              }
+                            },
                             icon: const Icon(Icons.add_a_photo),
                             label: const Text('Add Photo'),
                           ),

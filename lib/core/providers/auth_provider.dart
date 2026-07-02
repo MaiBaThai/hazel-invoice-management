@@ -124,7 +124,10 @@ class AuthProvider with ChangeNotifier {
       }
 
       // Mobile logic
-      final GoogleSignInAccount? googleUser = await _googleSignIn.attemptLightweightAuthentication();
+      final Future<GoogleSignInAccount?>? authFuture = _googleSignIn.attemptLightweightAuthentication();
+      final GoogleSignInAccount? googleUser = authFuture != null
+          ? await authFuture.timeout(const Duration(seconds: 2), onTimeout: () => null)
+          : null;
       if (googleUser != null) {
         final GoogleSignInAuthentication googleAuth = googleUser.authentication;
         final AuthCredential credential = GoogleAuthProvider.credential(
@@ -254,5 +257,69 @@ class AuthProvider with ChangeNotifier {
       debugPrint('Google Sign-Out failed: $e');
       return null;
     });
+  }
+
+  /// Deletes the authenticated user's Firestore data first, then deletes their Firebase Auth account.
+  /// If the session is stale, Firebase Auth will throw a [FirebaseAuthException] with code 'requires-recent-login'.
+  Future<void> deleteCurrentUserAccount() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    // 1. Delete data from Firestore/Storage first (requires active credentials under security rules)
+    await _migrationService.deleteUserScopedData(currentUser.uid);
+
+    // 2. Delete the user account in Firebase Auth
+    await currentUser.delete();
+
+    // 3. Perform local logout / cleanup
+    await signOut();
+
+    // 4. Reset to anonymous session fallback
+    await signInSilently();
+  }
+
+  /// Re-authenticates the current user based on their provider (Apple or Google).
+  /// This is used to satisfy the security requirement for sensitive operations like account deletion.
+  Future<void> reauthenticateCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No user currently signed in.');
+
+    final providerIds = user.providerData.map((info) => info.providerId).toList();
+
+    if (providerIds.contains('apple.com')) {
+      final rawNonce = _generateNonce();
+      final hashedNonce = _sha256ofString(rawNonce);
+
+      // Request credential from Apple
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
+
+      final credential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+    } else if (providerIds.contains('google.com')) {
+      if (kIsWeb) {
+        final googleProvider = GoogleAuthProvider();
+        await user.reauthenticateWithPopup(googleProvider);
+      } else {
+        final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+        final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          idToken: googleAuth.idToken,
+        );
+        await user.reauthenticateWithCredential(credential);
+      }
+    } else {
+      debugPrint('No supported oauth provider found for re-authentication.');
+    }
   }
 }

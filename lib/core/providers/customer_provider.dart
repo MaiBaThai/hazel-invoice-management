@@ -30,6 +30,7 @@ class CustomerProvider extends ChangeNotifier {
     if (newService.userId != null) {
       loadCustomers();
     } else {
+      _hasLoadedOnce = true;
       notifyListeners(); // Ensure UI knows we are empty
     }
   }
@@ -60,23 +61,31 @@ class CustomerProvider extends ChangeNotifier {
   bool get isUploadingPhoto => _isUploadingPhoto;
   String? get uploadError => _uploadError;
 
-  Future<void> loadCustomers({bool force = false}) async {
+  Future<void> loadCustomers({bool force = false, bool showLoader = true}) async {
     if (_hasLoadedOnce && !force) {
       return;
     }
-    _isLoading = true;
-    _hasError = false;
-    notifyListeners();
+    if (showLoader) {
+      _isLoading = true;
+      _hasError = false;
+      notifyListeners();
+    }
     try {
       _allCustomers = await _dbService.getCustomers().timeout(const Duration(seconds: 5));
       _searchResults = [];
       _hasLoadedOnce = true;
     } catch (e) {
       debugPrint('Error loading customers: $e');
-      _hasError = true;
+      if (showLoader) {
+        _hasError = true;
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (showLoader) {
+        _isLoading = false;
+        notifyListeners();
+      } else {
+        notifyListeners();
+      }
     }
   }
 
@@ -164,14 +173,14 @@ class CustomerProvider extends ChangeNotifier {
 
   // --- Photo Logic ---
 
-  Future<void> uploadPhotoForInvoice(String invoiceId, String customerId) async {
+  Future<void> uploadPhotoForInvoice(String invoiceId, String customerId, ImageSource source) async {
     _isUploadingPhoto = true;
     _uploadError = null;
     notifyListeners();
     
     try {
       final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery, 
+        source: source, 
         imageQuality: 70,
       );
 
@@ -225,6 +234,36 @@ class CustomerProvider extends ChangeNotifier {
   void addCustomerLocally(Customer customer) {
     _allCustomers.add(customer);
     notifyListeners();
+  }
+
+  void updateCustomerTotalSpent(String customerId, double totalSpentAddition, DateTime lastVisit) {
+    final index = _allCustomers.indexWhere((c) => c.id == customerId);
+    if (index != -1) {
+      final oldCustomer = _allCustomers[index];
+      _allCustomers[index] = oldCustomer.copyWith(
+        totalSpent: oldCustomer.totalSpent + totalSpentAddition,
+        lastVisit: lastVisit,
+      );
+      
+      // Also update search results if any
+      final searchIndex = _searchResults.indexWhere((c) => c.id == customerId);
+      if (searchIndex != -1) {
+        _searchResults[searchIndex] = _searchResults[searchIndex].copyWith(
+          totalSpent: _searchResults[searchIndex].totalSpent + totalSpentAddition,
+          lastVisit: lastVisit,
+        );
+      }
+      
+      // Also update selectedCustomer if it is this customer
+      if (_selectedCustomer?.id == customerId) {
+        _selectedCustomer = _selectedCustomer!.copyWith(
+          totalSpent: _selectedCustomer!.totalSpent + totalSpentAddition,
+          lastVisit: lastVisit,
+        );
+      }
+      
+      notifyListeners();
+    }
   }
 
   Future<void> updateCustomer(String id, String name, String phone) async {

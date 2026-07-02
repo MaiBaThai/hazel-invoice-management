@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - My Salon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: #151c2c;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #ec4899;
+      --accent-rgb: 236, 72, 153;
+      --accent-hover: #db2777;
+      --border: #1f2937;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 3rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: -100px;
+      right: -100px;
+      width: 200px;
+      height: 200px;
+      background: rgba(var(--accent-rgb), 0.15);
+      filter: blur(80px);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    header {
+      margin-bottom: 2.5rem;
+      text-align: center;
+    }
+
+    .logo-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      border-radius: 16px;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.3);
+    }
+
+    .logo-icon {
+      color: white;
+      font-weight: 700;
+      font-size: 2rem;
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(to right, #ffffff, #d1d5db);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    section {
+      margin-bottom: 2rem;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+    }
+
+    h2::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 2px;
+      margin-right: 10px;
+    }
+
+    p {
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+
+    ul {
+      list-style-type: none;
+      margin-bottom: 1.5rem;
+      padding-left: 0.5rem;
+    }
+
+    li {
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      position: relative;
+      padding-left: 1.5rem;
+    }
+
+    li::before {
+      content: "•";
+      color: var(--accent);
+      font-weight: bold;
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: color 0.2s ease;
+      font-weight: 500;
+    }
+
+    a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-container">
+        <span class="logo-icon">S</span>
+      </div>
+      <h1>Privacy Policy</h1>
+      <p class="subtitle">Effective Date: June 9, 2026</p>
+    </header>
+
+    <main>
+      <section>
+        <h2>Overview</h2>
+        <p>My Salon is a zero-cost business management tool designed for salon and independent service providers. We respect your privacy and are committed to protecting the data you manage in the app. This Privacy Policy details the types of information collected, stored, and utilized within the My Salon application.</p>
+      </section>
+
+      <section>
+        <h2>Information We Collect</h2>
+        <p>My Salon primarily stores operational data to enable the invoicing and booking flows. This includes:</p>
+        <ul>
+          <li><strong>Client Information:</strong> Names, phone numbers, and transactional records (spend tracking, visit dates).</li>
+          <li><strong>Invoice Records:</strong> List of services provided, pricing, discounts, final totals, and billing dates.</li>
+          <li><strong>Product and Workspace Photos:</strong> Optional photos attached to invoice records to document your work.</li>
+          <li><strong>Account Identifiers:</strong> Authentication details provided during login (Google Sign-In, Sign in with Apple, or Anonymous tokens).</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Data Storage and Security</h2>
+        <p>All application data and media files are stored securely using Google Firebase (Firestore for database records and Cloud Storage for photos). The transmission of data is encrypted using standard Security Transport Layers (SSL/TLS).</p>
+      </section>
+
+      <section>
+        <h2>Tracking and Data Sharing</h2>
+        <p>We do not track your device across third-party websites or services (no IDFA tracking). Your data is never sold, shared, or utilized for advertising or profiling purposes. It remains private to your authenticated user session.</p>
+      </section>
+
+      <section>
+        <h2>Your Choices</h2>
+        <p>You maintain full control of your data. You can add, edit, or permanently delete customer profiles, invoices, and associated workspace photos directly within the app's user interface. Deleting your account will remove all synchronized database documents and storage assets from our cloud backend.</p>
+      </section>
+
+      <section>
+        <h2>Contact Us</h2>
+        <p>If you have any questions or feedback regarding this policy, please contact us at <a href="mailto:thai.maiba1984@gmail.com">thai.maiba1984@gmail.com</a>.</p>
+      </section>
+    </main>
+
+    <footer>
+      &copy; 2026 My Salon. All rights reserved.
+    </footer>
+  </div>
+</body>
+</html>

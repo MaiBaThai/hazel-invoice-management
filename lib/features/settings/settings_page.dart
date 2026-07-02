@@ -8,12 +8,26 @@ import '../../core/providers/settings_provider.dart';
 import '../../data/models/app_settings_model.dart';
 import '../../data/models/invoice_model.dart';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../core/utils/web_helper.dart' as web_helper;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 
-class SettingsPage extends StatelessWidget {
+
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  bool _isRestoring = false;
+  bool _isExporting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -88,9 +102,15 @@ class SettingsPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _handleBackup(context, auth),
-                    icon: const Icon(Icons.download, size: 16),
-                    label: const Text('BACKUP DATA', style: TextStyle(fontSize: 11)),
+                    onPressed: _isExporting || _isRestoring ? null : () => _handleBackup(context, auth),
+                    icon: _isExporting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.download, size: 16),
+                    label: Text(_isExporting ? 'BACKING UP...' : 'BACKUP DATA', style: const TextStyle(fontSize: 11)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
@@ -100,9 +120,15 @@ class SettingsPage extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _handleRestore(context, auth),
-                    icon: const Icon(Icons.upload, size: 16),
-                    label: const Text('RESTORE DATA', style: TextStyle(fontSize: 11)),
+                    onPressed: _isRestoring || _isExporting ? null : () => _handleRestore(context, auth),
+                    icon: _isRestoring
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.upload, size: 16),
+                    label: Text(_isRestoring ? 'RESTORING...' : 'RESTORE DATA', style: const TextStyle(fontSize: 11)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.indigo,
                       foregroundColor: Colors.white,
@@ -663,6 +689,13 @@ class SettingsPage extends StatelessWidget {
 
   Future<void> _handleBackup(BuildContext context, AuthProvider auth) async {
     if (auth.isAnonymous) return;
+    if (_isRestoring || _isExporting) return;
+
+    if (mounted) {
+      setState(() {
+        _isExporting = true;
+      });
+    }
 
     try {
       final data = await auth.migrationService.exportData(userId: auth.user!.uid);
@@ -678,16 +711,23 @@ class SettingsPage extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Backup downloaded successfully!')));
         }
       } else {
+        final String userLabel = auth.user?.email?.split('@').first ?? auth.user!.uid.substring(0, 8);
+        final String fileName = "nms_backup_${userLabel}_${DateTime.now().millisecondsSinceEpoch}.json";
+        
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File('${tempDir.path}/$fileName');
+        await tempFile.writeAsString(jsonString);
+        
         if (context.mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Backup Data (JSON)'),
-              content: SingleChildScrollView(child: SelectableText(jsonString)),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text('CLOSE')),
-              ],
-            ),
+          final box = context.findRenderObject() as RenderBox?;
+          final Rect? sharePositionOrigin = box != null 
+              ? (box.localToGlobal(Offset.zero) & box.size) 
+              : null;
+              
+          await Share.shareXFiles(
+            [XFile(tempFile.path)],
+            subject: 'NMS Backup $userLabel',
+            sharePositionOrigin: sharePositionOrigin,
           );
         }
       }
@@ -695,54 +735,150 @@ class SettingsPage extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Backup failed: $e')));
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isExporting = false;
+        });
+      }
     }
   }
 
   Future<void> _handleRestore(BuildContext context, AuthProvider auth) async {
-    if (!kIsWeb) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restore is only supported on Web version.')));
-      return;
+    if (_isRestoring || _isExporting) return;
+
+    if (mounted) {
+      setState(() {
+        _isRestoring = true;
+      });
     }
 
-    web_helper.uploadBackupWeb(
-      onSuccess: (jsonData) async {
-        if (!context.mounted) return;
-
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Confirm Restore'),
-            content: const Text('This will PERMANENTLY overwrite all your current data with the contents of the JSON file. This action cannot be undone. Proceed?'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true), 
-                child: const Text('RESTORE NOW', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ) ?? false;
-
-        if (confirmed && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restoring data... Please wait.')));
-          try {
-            await auth.migrationService.importDataFromJson(jsonData, targetUserId: auth.user!.uid);
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restore successful!')));
+    try {
+      if (kIsWeb) {
+        web_helper.uploadBackupWeb(
+          onSuccess: (jsonData) async {
+            try {
+              if (context.mounted) {
+                await _performRestore(context, auth, jsonData);
+              }
+            } finally {
+              if (mounted) {
+                setState(() {
+                  _isRestoring = false;
+                });
+              }
             }
-          } catch (e) {
+          },
+          onError: (e) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Restore failed: $e')));
             }
+            if (mounted) {
+              setState(() {
+                _isRestoring = false;
+              });
+            }
+          },
+        );
+      } else {
+        try {
+          final result = await FilePicker.pickFiles(
+            type: FileType.any,
+          );
+
+          if (result == null || result.files.isEmpty) {
+            return; // User canceled the picker
+          }
+
+          final file = result.files.first;
+          final isJson = file.extension?.toLowerCase() == 'json' || file.name.toLowerCase().endsWith('.json');
+          if (!isJson) {
+            throw Exception('Please select a valid .json backup file.');
+          }
+
+          Map<String, dynamic> jsonData;
+          if (file.path != null) {
+            final content = await File(file.path!).readAsString();
+            jsonData = jsonDecode(content);
+          } else if (file.bytes != null) {
+            final content = utf8.decode(file.bytes!);
+            jsonData = jsonDecode(content);
+          } else {
+            throw Exception('No file data available.');
+          }
+
+          if (context.mounted) {
+            await _performRestore(context, auth, jsonData);
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Restore failed: $e'), backgroundColor: Colors.red),
+            );
+          }
+        } finally {
+          if (mounted) {
+            setState(() {
+              _isRestoring = false;
+            });
           }
         }
-      },
-      onError: (e) {
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Restore failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+      if (mounted) {
+        setState(() {
+          _isRestoring = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _performRestore(BuildContext context, AuthProvider auth, Map<String, dynamic> jsonData) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Restore'),
+        content: const Text('This will PERMANENTLY overwrite all your current data with the contents of the JSON file. This action cannot be undone. Proceed?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true), 
+            child: const Text('RESTORE NOW', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    ) ?? false;
+
+    if (confirmed && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restoring data... Please wait.')));
+      try {
+        await auth.migrationService.importDataFromJson(jsonData, targetUserId: auth.user!.uid);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Restore failed: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restore successful!')));
+          
+          if (kIsWeb) {
+            web_helper.reloadPageWeb();
+          } else {
+            // Reset key providers manually to reflect changes in UI
+            Provider.of<InvoiceProvider>(context, listen: false).reset();
+            Provider.of<CustomerProvider>(context, listen: false).loadCustomers(force: true);
+            Provider.of<DashboardProvider>(context, listen: false).loadDashboardData();
+            Provider.of<SettingsProvider>(context, listen: false).loadSettings();
+          }
         }
-      },
-    );
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Restore failed: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildDangerZoneSection(BuildContext context, AuthProvider auth) {
@@ -779,14 +915,14 @@ class SettingsPage extends StatelessWidget {
                     Icon(Icons.warning_amber_rounded, color: Colors.red),
                     SizedBox(width: 8),
                     Text(
-                      'Delete All Data',
+                      'Delete Account & Data',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Permanently delete all customers, invoices, and settings associated with this account. This action is irreversible.',
+                  'Permanently delete your account along with all associated customers, invoices, and settings. This action is irreversible.',
                   style: TextStyle(fontSize: 13, color: Colors.black87),
                 ),
                 const SizedBox(height: 16),
@@ -800,7 +936,7 @@ class SettingsPage extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
-                    child: const Text('DELETE ALL MY DATA', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text('DELETE MY ACCOUNT & DATA', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -828,7 +964,7 @@ class SettingsPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'This will PERMANENTLY DELETE all your data. To protect you, a backup will be downloaded automatically before deletion.',
+                    'This will PERMANENTLY DELETE your account and all your data. To protect your records, a backup will be downloaded or shared automatically before deletion.',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
@@ -855,7 +991,7 @@ class SettingsPage extends StatelessWidget {
                       ? () => Navigator.pop(context, true)
                       : null,
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                  child: const Text('BACKUP & DELETE EVERYTHING'),
+                  child: const Text('BACKUP & DELETE ACCOUNT'),
                 ),
               ],
             );
@@ -865,12 +1001,14 @@ class SettingsPage extends StatelessWidget {
     );
 
     if (confirmed == true && context.mounted) {
+      final rootNavigator = Navigator.of(context, rootNavigator: true);
       try {
         // 1. Show global loading
         showDialog(
           context: context,
+          useRootNavigator: true,
           barrierDismissible: false,
-          builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.red)),
+          builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.red)),
         );
 
         // 2. Trigger automatic backup
@@ -880,43 +1018,127 @@ class SettingsPage extends StatelessWidget {
         // Give a tiny delay for the download to trigger
         await Future.delayed(const Duration(seconds: 1));
 
-        // 3. Delete everything
+        // 3. Delete account and data
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deleting data...')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deleting account & data...')));
         }
         
-        await auth.migrationService.deleteUserScopedData(auth.user!.uid);
+        await auth.deleteCurrentUserAccount();
 
-          // 4. Cleanup
+        // 4. Cleanup
+        rootNavigator.pop(); // Close loading indicator
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Account and all associated data deleted successfully.'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+
+          await Future.delayed(const Duration(seconds: 2));
+          
+          if (kIsWeb) {
+            web_helper.reloadPageWeb();
+          } else {
+            // Fallback for mobile: reset key providers manually
+            Provider.of<InvoiceProvider>(context, listen: false).reset();
+            Provider.of<CustomerProvider>(context, listen: false).loadCustomers();
+            Provider.of<DashboardProvider>(context, listen: false).loadDashboardData();
+            Provider.of<SettingsProvider>(context, listen: false).loadSettings();
+          }
+        }
+      } on FirebaseAuthException catch (e) {
+        rootNavigator.pop(); // Close loading indicator
+        if (e.code == 'requires-recent-login') {
           if (context.mounted) {
-            Navigator.pop(context); // Close loading indicator
-            
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('All data deleted successfully. Your account remains active.'),
-                duration: Duration(seconds: 3),
+            showDialog(
+              context: context,
+              useRootNavigator: true,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('Identity Verification Required'),
+                content: const Text(
+                  'For security, you must verify your identity to delete your account. '
+                  'Please tap "Verify & Delete" to authenticate using your sign-in provider.'
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('CANCEL'),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(dialogContext); // Close verification request dialog
+                      
+                      if (!context.mounted) return;
+                      
+                      // 1. Show loading indicator
+                      showDialog(
+                        context: context,
+                        useRootNavigator: true,
+                        barrierDismissible: false,
+                        builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.red)),
+                      );
+                      
+                      try {
+                        // 2. Re-authenticate
+                        await auth.reauthenticateCurrentUser();
+                        
+                        // 3. Retry account deletion
+                        await auth.deleteCurrentUserAccount();
+                        
+                        // 4. Cleanup
+                        rootNavigator.pop(); // Close loading indicator
+                        
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Account and all associated data deleted successfully.'),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+
+                          await Future.delayed(const Duration(seconds: 2));
+                          
+                          if (kIsWeb) {
+                            web_helper.reloadPageWeb();
+                          } else {
+                            Provider.of<InvoiceProvider>(context, listen: false).reset();
+                            Provider.of<CustomerProvider>(context, listen: false).loadCustomers();
+                            Provider.of<DashboardProvider>(context, listen: false).loadDashboardData();
+                            Provider.of<SettingsProvider>(context, listen: false).loadSettings();
+                          }
+                        }
+                      } catch (reauthErr) {
+                        rootNavigator.pop(); // Close loading indicator
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Verification failed: $reauthErr'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    child: const Text('VERIFY & DELETE', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  ),
+                ],
               ),
             );
-
-            await Future.delayed(const Duration(seconds: 2));
-            
-            // A full reload is still the safest way to ensure NO stale state remains.
-            // This time the user stays logged in with their account.
-            if (kIsWeb) {
-              web_helper.reloadPageWeb();
-            } else {
-              // Fallback for mobile: reset key providers manually
-              Provider.of<InvoiceProvider>(context, listen: false).reset();
-              Provider.of<CustomerProvider>(context, listen: false).loadCustomers();
-              Provider.of<DashboardProvider>(context, listen: false).loadDashboardData();
-              Provider.of<SettingsProvider>(context, listen: false).loadSettings();
-            }
           }
-        } catch (e) {
+        } else {
           if (context.mounted) {
-            Navigator.pop(context); // Close loading indicator
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Deletion failed: $e'), backgroundColor: Colors.red));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Deletion failed: ${e.message ?? e.code}'), backgroundColor: Colors.red),
+            );
           }
+        }
+      } catch (e) {
+        rootNavigator.pop(); // Close loading indicator
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Deletion failed: $e'), backgroundColor: Colors.red));
+        }
       }
     }
   }

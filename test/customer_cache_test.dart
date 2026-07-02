@@ -6,7 +6,10 @@ import 'package:nms/core/providers/customer_provider.dart';
 import 'package:nms/core/providers/invoice_provider.dart';
 import 'package:nms/data/models/customer_model.dart';
 
-class FakeBuildContext extends Fake implements BuildContext {}
+class FakeBuildContext extends Fake implements BuildContext {
+  @override
+  bool get mounted => true;
+}
 
 void main() {
   group('Shared Customer Cache Integration Tests', () {
@@ -77,6 +80,55 @@ void main() {
       // Verify cache contains updated data
       expect(customerProvider.allCustomers.any((c) => c.name == 'Alice Cooper'), isTrue);
       expect(customerProvider.allCustomers.any((c) => c.name == 'Alice Smith'), isFalse);
+    });
+
+    testWidgets('Saving an invoice should update the customer\'s totalSpent locally and reload the cache', (WidgetTester tester) async {
+      // Get Alice
+      final alice = customerProvider.allCustomers.firstWhere((c) => c.name == 'Alice Smith');
+      expect(alice.totalSpent, equals(0.0));
+
+      // Select Alice in InvoiceProvider
+      invoiceProvider.selectCustomer(alice);
+      
+      // Set session times (required for saving a new invoice)
+      invoiceProvider.setSessionRange(
+        DateTime.now(),
+        DateTime.now().add(const Duration(hours: 1)),
+      );
+
+      // Add a service
+      invoiceProvider.addService();
+      invoiceProvider.updateService(0, 'Manicure', 30.0);
+
+      // Verify selected customer and totals
+      expect(invoiceProvider.selectedCustomer!.id, equals(alice.id));
+      expect(invoiceProvider.finalTotal, equals(30.0));
+
+      late BuildContext realContext;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                realContext = context;
+                return const SizedBox();
+              },
+            ),
+          ),
+        ),
+      );
+
+      // Save the invoice
+      final invoiceId = await invoiceProvider.saveInvoice(realContext);
+      expect(invoiceId, isNotNull);
+
+      // Verify customer totalSpent updated locally in CustomerProvider immediately
+      final updatedAliceLocal = customerProvider.allCustomers.firstWhere((c) => c.id == alice.id);
+      expect(updatedAliceLocal.totalSpent, equals(30.0));
+
+      // Verify totalSpent is also updated in the database
+      final aliceDb = await dbService.getCustomer(alice.id);
+      expect(aliceDb!.totalSpent, equals(30.0));
     });
   });
 }

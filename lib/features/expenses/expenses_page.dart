@@ -106,7 +106,10 @@ class _ExpensesPageState extends State<ExpensesPage> {
       return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
     }
 
-    return Scaffold(
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: Scaffold(
       appBar: AppBar(
         title: Text(
           provider.isEditing ? 'Edit Expense' : 'Expenses',
@@ -306,6 +309,6 @@ class _ExpensesPageState extends State<ExpensesPage> {
           ],
         ),
       ),
-    );
+    ),);
   }
 }

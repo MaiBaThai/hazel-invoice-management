@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -10,6 +11,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../../core/utils/web_helper.dart' as web_helper;
 import '../../../main.dart';
 import '../../../data/models/app_settings_model.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import '../../../core/utils/ui_helper.dart';
 
 class InvoiceSummaryDialog extends StatefulWidget {
   const InvoiceSummaryDialog({super.key});
@@ -43,12 +47,16 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
           );
         }
       } else {
-        // Fallback for non-web if needed, for now we notify
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Saving image is currently supported on Web only.')),
-          );
-        }
+        final tempDir = await getTemporaryDirectory();
+        final file = await File('${tempDir.path}/$fileName').create();
+        await file.writeAsBytes(pngBytes);
+        
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(file.path)],
+            subject: 'Invoice - ${DateFormat('dd/MM/yyyy').format(DateTime.now())}',
+          ),
+        );
       }
     } catch (e) {
       debugPrint('Error saving invoice image: $e');
@@ -93,8 +101,8 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       contentPadding: EdgeInsets.zero,
-      content: SizedBox(
-        width: 450,
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 450),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -346,9 +354,12 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
             if (provider.uploadError == null)
               ElevatedButton(
                 onPressed: () async {
-                  await provider.uploadPhotoForInvoice(invoiceId, customerId);
-                  if (context.mounted && provider.uploadError == null) {
-                    Navigator.pop(context);
+                  final source = await showImageSourceSheet(context);
+                  if (source != null && context.mounted) {
+                    await provider.uploadPhotoForInvoice(invoiceId, customerId, source);
+                    if (context.mounted && provider.uploadError == null) {
+                      Navigator.pop(context);
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.pink, foregroundColor: Colors.white),
@@ -357,9 +368,12 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
             if (provider.uploadError != null)
               ElevatedButton(
                 onPressed: () async {
-                  await provider.uploadPhotoForInvoice(invoiceId, customerId);
-                  if (context.mounted && provider.uploadError == null) {
-                    Navigator.pop(context);
+                  final source = await showImageSourceSheet(context);
+                  if (source != null && context.mounted) {
+                    await provider.uploadPhotoForInvoice(invoiceId, customerId, source);
+                    if (context.mounted && provider.uploadError == null) {
+                      Navigator.pop(context);
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
