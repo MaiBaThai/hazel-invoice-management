@@ -89,11 +89,15 @@ class ExpenseSummaryDialog extends StatelessWidget {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text('EDIT'),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('EDIT'),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
+                    flex: 2,
                     child: ElevatedButton(
                       onPressed: provider.isSaving ? null : () async {
                         try {
@@ -128,7 +132,10 @@ class ExpenseSummaryDialog extends StatelessWidget {
                       ),
                       child: provider.isSaving
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : Text(provider.isEditing ? 'UPDATE RECORD' : 'SAVE RECORD'),
+                          : FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(provider.isEditing ? 'UPDATE' : 'SAVE'),
+                            ),
                     ),
                   ),
                 ],

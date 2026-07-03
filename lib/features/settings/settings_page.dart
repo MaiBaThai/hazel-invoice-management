@@ -1038,6 +1038,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
           await Future.delayed(const Duration(seconds: 2));
           
+          if (!context.mounted) return;
           if (kIsWeb) {
             web_helper.reloadPageWeb();
           } else {
@@ -1100,6 +1101,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
                           await Future.delayed(const Duration(seconds: 2));
                           
+                          if (!context.mounted) return;
                           if (kIsWeb) {
                             web_helper.reloadPageWeb();
                           } else {

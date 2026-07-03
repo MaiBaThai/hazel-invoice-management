@@ -138,11 +138,14 @@ class _CustomerHistoryDialogState extends State<CustomerHistoryDialog> {
               await Provider.of<CustomerProvider>(context, listen: false)
                   .updateCustomer(widget.customerId, nameCtrl.text.trim(), phoneCtrl.text.trim());
                   
+              if (!mounted) return;
               setState(() {
                 _currentName = nameCtrl.text.trim();
                 _currentPhone = phoneCtrl.text.trim();
               });
-              Navigator.pop(context);
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.pink, foregroundColor: Colors.white),
             child: const Text('SAVE'),
@@ -155,19 +158,24 @@ class _CustomerHistoryDialogState extends State<CustomerHistoryDialog> {
   void _showDeleteConfirmation(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Customer?', style: TextStyle(color: Colors.red)),
         content: const Text('Are you sure you want to delete this customer? All associated invoices will also be permanently deleted. This action cannot be undone.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CANCEL')),
           ElevatedButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
+              final dialogNavigator = Navigator.of(dialogContext);
+
               await Provider.of<CustomerProvider>(context, listen: false)
                   .deleteCustomer(widget.customerId);
               
-              if (mounted) {
-                Navigator.pop(context); // Close confirmation dialog
-                Navigator.pop(context); // Close history dialog
+              if (dialogContext.mounted) {
+                dialogNavigator.pop(); // Close confirmation dialog
+              }
+              if (context.mounted) {
+                navigator.pop(); // Close history dialog
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),

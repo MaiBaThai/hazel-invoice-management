@@ -93,6 +93,103 @@ class _ExpensesPageState extends State<ExpensesPage> {
     }
   }
 
+  String _getFormattedDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(date.year, date.month, date.day);
+    final diff = target.difference(today).inDays;
+    
+    final dayStr = DateFormat('EEEE, dd/MM/yyyy').format(date);
+    if (diff == 0) {
+      return 'Today ($dayStr)';
+    } else if (diff == -1) {
+      return 'Yesterday ($dayStr)';
+    } else if (diff == 1) {
+      return 'Tomorrow ($dayStr)';
+    }
+    return dayStr;
+  }
+
+  Widget _buildDateSlider(BuildContext context, ExpenseProvider provider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'EXPENSE DATE',
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.1),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.orange.withOpacity(0.2)),
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.orange.withOpacity(0.05),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left, color: Colors.orange),
+                onPressed: () {
+                  final newDate = provider.expenseDate.subtract(const Duration(days: 1));
+                  provider.setExpenseDate(newDate);
+                },
+              ),
+              Expanded(
+                child: InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: provider.expenseDate,
+                      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                      builder: (context, child) {
+                        return Theme(
+                          data: Theme.of(context).copyWith(
+                            colorScheme: const ColorScheme.light(
+                              primary: Colors.orange,
+                              onPrimary: Colors.white,
+                              onSurface: Colors.black87,
+                            ),
+                          ),
+                          child: child!,
+                        );
+                      },
+                    );
+                    if (picked != null) {
+                      provider.setExpenseDate(picked);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12.0),
+                    child: Text(
+                      _getFormattedDate(provider.expenseDate),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right, color: Colors.orange),
+                onPressed: () {
+                  final newDate = provider.expenseDate.add(const Duration(days: 1));
+                  provider.setExpenseDate(newDate);
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ExpenseProvider>(context);
@@ -141,6 +238,8 @@ class _ExpensesPageState extends State<ExpensesPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildDateSlider(context, provider),
+            const SizedBox(height: 24),
             const Text('Categories', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Wrap(

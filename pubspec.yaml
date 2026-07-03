@@ -1,7 +1,7 @@
 name: nms
 description: Nail Management System - A zero-cost management tool for nail salons.
 publish_to: 'none'
-version: 0.1.0+8
+version: 0.2.0+10
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -26,6 +26,7 @@ dependencies:
   share_plus: ^12.0.2
   path_provider: ^2.1.3
   file_picker: ^11.0.2
+  firebase_analytics: ^12.4.3
 
 dev_dependencies:
   flutter_test:

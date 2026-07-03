@@ -57,6 +57,7 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-021**: As a user, I want quick-add categories (Rent, Supplies, Utilities) to speed up expense entry.
 - [x] **STORY-022**: As a user, I want to see the impact of expenses on my daily/monthly profit on the Dashboard.
 - [x] **STORY-041**: As a user, I want to edit and delete existing expenses from the Dashboard Daily Performance dialog, with dynamic recalculations of expenses, profits, and profit margins.
+- [x] **STORY-042**: As a user, I want to select and edit the transaction date of an expense using a convenient inline date slider, defaulting to the current date.
 
 ## Epic 7: Multi-User & Security [DONE]
 *Goal: Implement secure user authentication and data isolation.*
@@ -73,7 +74,14 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [x] **STORY-037**: As a user, I want to sign in using Apple Authentication on iOS devices for compliance.
 - [ ] **STORY-038**: As a user, I want the app to request native iOS permissions (camera/photo library) with descriptions and declare API usage in a Privacy Manifest.
 - [ ] **STORY-039**: As a user, I want the app UI to support iOS notch and home indicator safe areas.
-- [ ] **STORY-040**: As a developer, I want to build and submit the release app bundle to TestFlight for developer testing.
+- [x] **STORY-040**: As a developer, I want to build and submit the release app bundle to TestFlight for developer testing.
+## Changelogs - July 3, 2026
+### v0.2.0 - Expense Date Selection, Layout Optimizations & iOS Build (2026-07-03)
+- **Expense Date Picker**: Implemented a convenient inline date slider widget at the top of the Expenses screen, supporting single-tap left/right day shifting and calendar date selection.
+- **Custom Expense Date & Editing**: Integrated the selected date state into `ExpenseProvider`. Enabled full date customization when creating new expenses or editing existing ones.
+- **iPhone X Layout Optimization**: Resolved text wrapping/clipping issues on small screens (like iPhone X) for the dialog confirm buttons by setting `flex: 2` on the main action, shortening labels to `SAVE`/`UPDATE`, and wrapping them in `FittedBox` for automatic scaling.
+- **iOS TestFlight Build**: Configured, resolved CocoaPods compile issues (updating `cloud_firestore` to `6.6.0`), incremented the build version to `0.2.0+10`, and successfully compiled the IPA bundle for TestFlight.
+
 ## Changelogs - June 8, 2026
 ### v1.13.0 - Epic 2: Apple Sign-In & App Store Compliance (2026-06-08)
 - **Apple Sign-In Integration**: Added full native "Sign in with Apple" support on iOS devices using the official `SignInWithAppleButton` widget for strict App Store guideline compliance, utilizing cryptographically secure SHA-256 nonces.

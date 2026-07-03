@@ -17,6 +17,7 @@ import 'firebase_options_prod.dart' as prod;
 import 'package:nms/data/services/database_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/services.dart' show appFlavor;
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 final GlobalKey<MainNavigationPageState> mainNavKey =
     GlobalKey<MainNavigationPageState>();
@@ -111,6 +112,9 @@ class NMSApp extends StatelessWidget {
         primarySwatch: Colors.pink,
         useMaterial3: true,
       ),
+      navigatorObservers: [
+        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+      ],
       home: MainNavigationPage(key: mainNavKey),
     );
   }
@@ -134,10 +138,20 @@ class MainNavigationPageState extends State<MainNavigationPage> {
     SettingsPage(),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    FirebaseAnalytics.instance.logScreenView(screenName: 'Invoice');
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+    final List<String> screenNames = ['Invoice', 'Expenses', 'Dashboard', 'Customers', 'Settings'];
+    if (index >= 0 && index < screenNames.length) {
+      FirebaseAnalytics.instance.logScreenView(screenName: screenNames[index]);
+    }
     if (index == 2) {
       Provider.of<DashboardProvider>(context, listen: false)
           .loadDashboardData();

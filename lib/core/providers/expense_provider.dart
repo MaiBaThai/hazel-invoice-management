@@ -22,12 +22,14 @@ class ExpenseProvider with ChangeNotifier {
   // Edit state variables
   String? _editingExpenseId;
   DateTime? _editingCreatedAt;
+  DateTime _expenseDate = DateTime.now();
 
   List<ExpenseItem> get items => List.unmodifiable(_items);
   String get note => _note;
   bool get isSaving => _isSaving;
   bool get isEditing => _editingExpenseId != null;
   String? get editingExpenseId => _editingExpenseId;
+  DateTime get expenseDate => _expenseDate;
 
   double get totalCost => _items.fold(0, (sum, item) => sum + item.cost);
 
@@ -55,9 +57,24 @@ class ExpenseProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void setExpenseDate(DateTime date) {
+    _expenseDate = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      _expenseDate.hour,
+      _expenseDate.minute,
+      _expenseDate.second,
+      _expenseDate.millisecond,
+      _expenseDate.microsecond,
+    );
+    notifyListeners();
+  }
+
   void loadExpenseForEditing(Expense expense) {
     _editingExpenseId = expense.id;
     _editingCreatedAt = expense.createdAt;
+    _expenseDate = expense.createdAt;
     _items.clear();
     _items.addAll(expense.items);
     _note = expense.note;
@@ -70,6 +87,7 @@ class ExpenseProvider with ChangeNotifier {
     _isSaving = false;
     _editingExpenseId = null;
     _editingCreatedAt = null;
+    _expenseDate = DateTime.now();
     notifyListeners();
   }
 
@@ -85,7 +103,7 @@ class ExpenseProvider with ChangeNotifier {
         items: _items,
         totalCost: totalCost,
         note: _note,
-        createdAt: _editingCreatedAt ?? DateTime.now(),
+        createdAt: _expenseDate,
       );
 
       if (_editingExpenseId != null) {
