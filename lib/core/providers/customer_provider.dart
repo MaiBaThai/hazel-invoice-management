@@ -5,9 +5,11 @@ import 'package:image_picker/image_picker.dart';
 import '../../data/models/customer_model.dart';
 import '../../data/models/invoice_model.dart';
 import '../../data/services/database_service.dart';
+import 'subscription_provider.dart';
 
 class CustomerProvider extends ChangeNotifier {
   DatabaseService _dbService;
+  SubscriptionProvider? _subscriptionProvider;
   final ImagePicker _picker = ImagePicker();
 
   CustomerProvider(this._dbService);
@@ -33,6 +35,10 @@ class CustomerProvider extends ChangeNotifier {
       _hasLoadedOnce = true;
       notifyListeners(); // Ensure UI knows we are empty
     }
+  }
+
+  void updateSubscriptionProvider(SubscriptionProvider subscriptionProvider) {
+    _subscriptionProvider = subscriptionProvider;
   }
 
   List<Customer> _allCustomers = [];
@@ -174,6 +180,12 @@ class CustomerProvider extends ChangeNotifier {
   // --- Photo Logic ---
 
   Future<void> uploadPhotoForInvoice(String invoiceId, String customerId, ImageSource source) async {
+    if (_subscriptionProvider?.isPremium == false) {
+      _uploadError = "Photo portfolios are a Premium feature. Please upgrade to upload.";
+      _isUploadingPhoto = false;
+      notifyListeners();
+      return;
+    }
     _isUploadingPhoto = true;
     _uploadError = null;
     notifyListeners();

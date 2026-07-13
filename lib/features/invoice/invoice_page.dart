@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/invoice_provider.dart';
+import '../../core/providers/subscription_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import 'widgets/customer_search_dialog.dart';
 import 'widgets/add_customer_dialog.dart';
@@ -91,6 +92,7 @@ class _InvoicePageState extends State<InvoicePage> {
     _syncWithProvider(provider);
 
     final settingsProvider = Provider.of<SettingsProvider>(context);
+    final subProvider = context.watch<SubscriptionProvider>();
     final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'My Salon', currencySymbol: '\$');
 
     String formatCurrency(num amount) {
@@ -122,6 +124,61 @@ class _InvoicePageState extends State<InvoicePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (!subProvider.isPremium)
+              FutureBuilder<int>(
+                future: provider.getInvoiceCountForCurrentMonth(),
+                builder: (context, snapshot) {
+                  final count = snapshot.data ?? 0;
+                  final limit = subProvider.freeInvoiceLimit;
+                  final percent = (count / limit).clamp(0.0, 1.0);
+                  
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 20),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.pink.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.pink.withOpacity(0.1)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Monthly Invoices',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.pink[700],
+                              ),
+                            ),
+                            Text(
+                              '$count / $limit free',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.pink[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: percent,
+                            backgroundColor: Colors.pink.withOpacity(0.1),
+                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.pink),
+                            minHeight: 6,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             const Text('Customer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             _CustomerSelector(provider: provider),

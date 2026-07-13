@@ -5,6 +5,7 @@ import '../models/customer_model.dart';
 import '../models/invoice_model.dart';
 import '../models/expense_model.dart';
 import '../models/app_settings_model.dart';
+import '../models/system_config_model.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db;
@@ -379,5 +380,46 @@ class DatabaseService {
   Future<void> updateSettings(AppSettings settings) async {
     await _ensureUserSynced();
     await _settingsRef.set(settings.toMap());
+  }
+
+  Future<int> getInvoiceCountForMonth(int year, int month) async {
+    final startOfMonth = DateTime(year, month, 1);
+    final nextMonth = month == 12 ? 1 : month + 1;
+    final nextYear = month == 12 ? year + 1 : year;
+    final startOfNextMonth = DateTime(nextYear, nextMonth, 1);
+
+    final snapshot = await _invoicesRef
+        .where('created_at', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where('created_at', isLessThan: Timestamp.fromDate(startOfNextMonth))
+        .count()
+        .get();
+
+    return snapshot.count ?? 0;
+  }
+
+  // --- Monetization & Access Control ---
+
+  Stream<SystemConfig> watchSystemConfig() {
+    return _db.collection('system_configs').doc('monetization').snapshots().map((snapshot) {
+      if (snapshot.exists && snapshot.data() != null) {
+        return SystemConfig.fromMap(snapshot.data()!);
+      }
+      return SystemConfig.defaultConfig();
+    });
+  }
+
+  Stream<List<String>> watchWhitelistedEmails() {
+    return _db.collection('system_configs').doc('access_control').snapshots().map((snapshot) {
+      if (snapshot.exists && snapshot.data() != null) {
+        final data = snapshot.data();
+        if (data != null) {
+          final list = data['whitelist_emails'] ?? data['whitelisted_emails'];
+          if (list != null) {
+            return List<String>.from(list);
+          }
+        }
+      }
+      return [];
+    });
   }
 }

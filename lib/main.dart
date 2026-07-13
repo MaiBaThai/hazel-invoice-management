@@ -6,6 +6,7 @@ import 'package:nms/core/providers/customer_provider.dart';
 import 'package:nms/core/providers/settings_provider.dart';
 import 'package:nms/core/providers/expense_provider.dart';
 import 'package:nms/core/providers/auth_provider.dart';
+import 'package:nms/core/providers/subscription_provider.dart';
 import 'package:nms/features/invoice/invoice_page.dart';
 import 'package:nms/features/expenses/expenses_page.dart';
 import 'package:nms/features/dashboard/dashboard_page.dart';
@@ -70,16 +71,24 @@ void main() async {
             isAnonymous: auth.isAnonymous,
           ),
         ),
-        ChangeNotifierProxyProvider<DatabaseService, CustomerProvider>(
+        ChangeNotifierProxyProvider<DatabaseService, SubscriptionProvider>(
           create: (context) =>
-              CustomerProvider(context.read<DatabaseService>()),
+              SubscriptionProvider(context.read<DatabaseService>()),
           update: (_, db, previous) => previous!..updateDbService(db),
         ),
-        ChangeNotifierProxyProvider2<DatabaseService, CustomerProvider, InvoiceProvider>(
-          create: (context) => InvoiceProvider(context.read<DatabaseService>()),
-          update: (_, db, customerProvider, previous) => previous!
+        ChangeNotifierProxyProvider2<DatabaseService, SubscriptionProvider, CustomerProvider>(
+          create: (context) =>
+              CustomerProvider(context.read<DatabaseService>()),
+          update: (_, db, sub, previous) => previous!
             ..updateDbService(db)
-            ..updateCustomerProvider(customerProvider),
+            ..updateSubscriptionProvider(sub),
+        ),
+        ChangeNotifierProxyProvider3<DatabaseService, CustomerProvider, SubscriptionProvider, InvoiceProvider>(
+          create: (context) => InvoiceProvider(context.read<DatabaseService>()),
+          update: (_, db, customer, sub, previous) => previous!
+            ..updateDbService(db)
+            ..updateCustomerProvider(customer)
+            ..updateSubscriptionProvider(sub),
         ),
         ChangeNotifierProxyProvider<DatabaseService, DashboardProvider>(
           create: (context) =>

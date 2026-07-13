@@ -75,6 +75,27 @@ This document outlines the features and user stories for the NMS, prioritized fo
 - [ ] **STORY-038**: As a user, I want the app to request native iOS permissions (camera/photo library) with descriptions and declare API usage in a Privacy Manifest.
 - [ ] **STORY-039**: As a user, I want the app UI to support iOS notch and home indicator safe areas.
 - [x] **STORY-040**: As a developer, I want to build and submit the release app bundle to TestFlight for developer testing.
+
+## Epic 9: Monetization & Subscription Integration
+*Goal: Implement in-app purchase functionality and access control.*
+
+- [x] **STORY-043**: As a developer, I want to integrate RevenueCat SDK to handle iOS StoreKit subscription transactions.
+- [x] **STORY-044**: As a developer, I want to configure dynamic monetization settings (limits, key switches) in Firestore.
+- [x] **STORY-045**: As a user, I want a premium paywall bottom sheet explaining benefits and offering Monthly/Yearly packages.
+- [x] **STORY-046**: As a user, I want to see my monthly invoice limit progress bar on the invoices list screen.
+- [x] **STORY-047**: As a user, I want a subscription management page in settings showing my status, packages, and restore options.
+- [x] **STORY-048**: As a user, I want to restore my previous purchases easily.
+
+## Changelogs - July 13, 2026
+### v1.14.0 - Epic 9: Monetization & In-App Subscriptions (2026-07-13)
+- **RevenueCat SDK & Billing Integration**: Integrated the official `purchases_flutter` SDK to handle StoreKit 2 and App Store sandbox purchases with backend receipt validation.
+- **Dynamic Monetization Config**: Created a flexible Firestore configuration framework (`system_configs/monetization`) to dynamically control subscription toggle, active packages, and monthly limits.
+- **Monthly Usage Progress Bar**: Integrated a dynamic usage card on the Invoices dashboard, giving free users visual progress of their monthly invoice limits (`count / limit free`).
+- **Premium Paywall Bottom Sheet**: Developed a premium glassmorphic bottom sheet presenting core premium value propositions and package options (VND pricing), automatically dismissing upon successful purchase or restore.
+- **Subscription Management Page**: Added a dedicated "My Subscription" settings page to check active subscription tier, buy packages, or restore previous transactions, complete with an interactive full-screen transaction processing state overlay.
+- **Unit and Integration Tests**: Created robust test coverage verifying the billing limit, local validation, and Firestore config sync states. All 19 tests pass successfully.
+- **iOS Production Compilation**: Compiled and packaged release Build 23 (`1.0.0+23`) for App Store Connect submission.
+
 ## Changelogs - July 3, 2026
 ### v0.2.0 - Expense Date Selection, Layout Optimizations & iOS Build (2026-07-03)
 - **Expense Date Picker**: Implemented a convenient inline date slider widget at the top of the Expenses screen, supporting single-tap left/right day shifting and calendar date selection.

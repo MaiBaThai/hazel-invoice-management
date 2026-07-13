@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/invoice_provider.dart';
+import '../../../core/providers/subscription_provider.dart';
+import '../../subscription/paywall_bottom_sheet.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/providers/customer_provider.dart';
 import 'package:intl/intl.dart';
@@ -282,6 +284,16 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                     flex: 2,
                     child: ElevatedButton(
                       onPressed: provider.isSaving ? null : () async {
+                        final subscriptionProvider = context.read<SubscriptionProvider>();
+                        final canSave = await provider.checkCanSaveInvoice();
+                        if (!canSave && context.mounted) {
+                          PaywallBottomSheet.show(
+                            context,
+                            titleExplanation: "You have reached the monthly free limit of ${subscriptionProvider.freeInvoiceLimit} invoices. Upgrade to Premium to save this invoice and unlock unlimited invoices.",
+                          );
+                          return;
+                        }
+
                         final customerId = provider.selectedCustomer?.id;
                         final invoiceId = await provider.saveInvoice(context);
                         
@@ -311,75 +323,100 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
   }
 
   void _showPhotoPrompt(BuildContext context, String invoiceId, String customerId) {
+    final subProvider = context.read<SubscriptionProvider>();
+    final isPremium = subProvider.isPremium;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => Consumer<CustomerProvider>(
         builder: (context, provider, child) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.camera_alt, color: Colors.pink),
-              SizedBox(width: 10),
-              Text('Capture Work?'),
+              Icon(isPremium ? Icons.camera_alt : Icons.lock_outline, color: Colors.pink),
+              const SizedBox(width: 10),
+              Text(isPremium ? 'Capture Work?' : 'Premium Feature'),
             ],
           ),
-          content: provider.isUploadingPhoto 
-            ? const Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Uploading photo...'),
-                ],
-              )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Would you like to take a photo of this work to save in the customer library?'),
-                  if (provider.uploadError != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16.0),
-                      child: Text(
-                        'Error: ${provider.uploadError}',
-                        style: const TextStyle(color: Colors.red, fontSize: 12),
-                      ),
+          content: !isPremium
+              ? const Text('Invoice Saved! Photo journaling is a Premium feature. Upgrade to Premium to attach work photos to this customer\'s visual archive.')
+              : provider.isUploadingPhoto 
+                  ? const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Uploading photo...'),
+                      ],
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Would you like to take a photo of this work to save in the customer library?'),
+                        if (provider.uploadError != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
+                            child: Text(
+                              'Error: ${provider.uploadError}',
+                              style: const TextStyle(color: Colors.red, fontSize: 12),
+                            ),
+                          ),
+                      ],
                     ),
-                ],
-              ),
-          actions: provider.isUploadingPhoto ? [] : [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(provider.uploadError != null ? 'CLOSE' : 'LATER', style: const TextStyle(color: Colors.grey)),
-            ),
-            if (provider.uploadError == null)
-              ElevatedButton(
-                onPressed: () async {
-                  final source = await showImageSourceSheet(context);
-                  if (source != null && context.mounted) {
-                    await provider.uploadPhotoForInvoice(invoiceId, customerId, source);
-                    if (context.mounted && provider.uploadError == null) {
+          actions: !isPremium
+              ? [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('LATER', style: TextStyle(color: Colors.grey)),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
                       Navigator.pop(context);
-                    }
-                  }
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.pink, foregroundColor: Colors.white),
-                child: const Text('📷 TAKE PHOTO'),
-              ),
-            if (provider.uploadError != null)
-              ElevatedButton(
-                onPressed: () async {
-                  final source = await showImageSourceSheet(context);
-                  if (source != null && context.mounted) {
-                    await provider.uploadPhotoForInvoice(invoiceId, customerId, source);
-                    if (context.mounted && provider.uploadError == null) {
-                      Navigator.pop(context);
-                    }
-                  }
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-                child: const Text('RETRY'),
-              ),
-          ],
+                      PaywallBottomSheet.show(
+                        context,
+                        titleExplanation: "Upgrade to Premium to upload work photos and start building your client photo portfolios!",
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.pink, foregroundColor: Colors.white),
+                    child: const Text('📷 GO PREMIUM'),
+                  ),
+                ]
+              : provider.isUploadingPhoto 
+                  ? [] 
+                  : [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(provider.uploadError != null ? 'CLOSE' : 'LATER', style: const TextStyle(color: Colors.grey)),
+                      ),
+                      if (provider.uploadError == null)
+                        ElevatedButton(
+                          onPressed: () async {
+                            final source = await showImageSourceSheet(context);
+                            if (source != null && context.mounted) {
+                              await provider.uploadPhotoForInvoice(invoiceId, customerId, source);
+                              if (context.mounted && provider.uploadError == null) {
+                                Navigator.pop(context);
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.pink, foregroundColor: Colors.white),
+                          child: const Text('📷 TAKE PHOTO'),
+                        ),
+                      if (provider.uploadError != null)
+                        ElevatedButton(
+                          onPressed: () async {
+                            final source = await showImageSourceSheet(context);
+                            if (source != null && context.mounted) {
+                              await provider.uploadPhotoForInvoice(invoiceId, customerId, source);
+                              if (context.mounted && provider.uploadError == null) {
+                                Navigator.pop(context);
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                          child: const Text('RETRY'),
+                        ),
+                    ],
         ),
       ),
     );

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/customer_provider.dart';
+import '../../core/providers/subscription_provider.dart';
+import '../subscription/paywall_bottom_sheet.dart';
 import '../../core/providers/invoice_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../data/models/app_settings_model.dart';
@@ -39,6 +41,9 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    final subProvider = context.watch<SubscriptionProvider>();
+    final isPremium = subProvider.isPremium;
+
     return Consumer<CustomerProvider>(
       builder: (context, provider, child) {
         final customer = provider.selectedCustomer;
@@ -62,9 +67,14 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
             ],
             bottom: TabBar(
               controller: _tabController,
-              tabs: const [
-                Tab(text: 'Invoices', icon: Icon(Icons.history)),
-                Tab(text: 'Photos', icon: Icon(Icons.photo_library)),
+              tabs: [
+                const Tab(text: 'Invoices', icon: Icon(Icons.history)),
+                Tab(
+                  text: 'Photos', 
+                  icon: isPremium 
+                      ? const Icon(Icons.photo_library) 
+                      : const Icon(Icons.lock_outline, color: Colors.grey),
+                ),
               ],
               indicatorColor: Colors.pink,
               labelColor: Colors.pink,
@@ -74,7 +84,7 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
             controller: _tabController,
             children: [
               _buildInvoicesTab(context, provider),
-              _buildPhotosTab(provider),
+              _buildPhotosTab(context, provider, isPremium),
             ],
           ),
         );
@@ -206,7 +216,56 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
     );
   }
 
-  Widget _buildPhotosTab(CustomerProvider provider) {
+  Widget _buildPhotosTab(BuildContext context, CustomerProvider provider, bool isPremium) {
+    if (!isPremium) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.pink.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.lock_outline, size: 48, color: Colors.pink),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Photo Journaling is Premium',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Keep a visual history of your client\'s work! Upgrade to Premium to upload and attach photos directly to customer invoices.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey, height: 1.4),
+              ),
+              const SizedBox(height: 28),
+              ElevatedButton.icon(
+                onPressed: () => PaywallBottomSheet.show(
+                  context,
+                  titleExplanation: "Upgrade to Premium to upload work photos and start building your client photo portfolios!",
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.pink,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('GO PREMIUM'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final List<Map<String, String>> allPhotos = [];
     for (var inv in provider.customerInvoices) {
       for (var url in inv.photoUrls) {

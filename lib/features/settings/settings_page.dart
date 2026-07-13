@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/invoice_provider.dart';
 import '../../core/providers/customer_provider.dart';
 import '../../core/providers/dashboard_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../core/providers/subscription_provider.dart';
+import '../subscription/subscription_settings_page.dart';
 import '../../data/models/app_settings_model.dart';
 import '../../data/models/invoice_model.dart';
 import 'dart:convert';
@@ -49,10 +52,8 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: const EdgeInsets.all(16.0),
         children: [
           _buildAccountSection(context, authProvider),
-          if (!authProvider.isAnonymous) ...[
-            const SizedBox(height: 32),
-            _buildDataManagementSection(context, authProvider),
-          ],
+          const SizedBox(height: 32),
+          _buildSubscriptionSection(context),
 
           const SizedBox(height: 32),
           _buildBusinessConfigSection(context, provider),
@@ -65,6 +66,8 @@ class _SettingsPageState extends State<SettingsPage> {
           if (!authProvider.isAnonymous) ...[
             const SizedBox(height: 48),
             _buildDangerZoneSection(context, authProvider),
+            const SizedBox(height: 32),
+            _buildDataManagementSection(context, authProvider),
           ],
           const SizedBox(height: 32),
         ],
@@ -457,6 +460,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildAccountSection(BuildContext context, AuthProvider auth) {
+    final isAnonymous = auth.isAnonymous;
     return Card(
       elevation: 0,
       color: Colors.pink.withOpacity(0.05),
@@ -465,203 +469,322 @@ class _SettingsPageState extends State<SettingsPage> {
         side: BorderSide(color: Colors.pink.withOpacity(0.2)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const CircleAvatar(
-                  backgroundColor: Colors.pink,
-                  child: Icon(Icons.person, color: Colors.white),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        padding: isAnonymous
+            ? const EdgeInsets.all(16.0)
+            : const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: isAnonymous
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        auth.isAnonymous ? 'Guest Mode' : (auth.user?.email ?? 'Account Secured'),
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      const CircleAvatar(
+                        backgroundColor: Colors.pink,
+                        child: Icon(Icons.person, color: Colors.white),
                       ),
-                      Text(
-                        auth.isAnonymous 
-                          ? 'Login to sync and backup your data' 
-                          : 'UID: ${auth.user?.uid ?? "Unknown"}',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                      ),
-                      if (auth.isAnonymous) ...[
-                        const SizedBox(height: 4),
-                        SelectableText(
-                          'UID: ${auth.isInitializing ? "Loading..." : (auth.user?.uid ?? "Unknown")}',
-                          style: TextStyle(color: Colors.pink[300], fontSize: 10, fontFamily: 'monospace'),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Guest Mode',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Login to sync and backup your data',
+                              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                            ),
+                            const SizedBox(height: 4),
+                            SelectableText(
+                              'UID: ${auth.isInitializing ? "Loading..." : (auth.user?.uid ?? "Unknown")}',
+                              style: TextStyle(color: Colors.pink[300], fontSize: 10, fontFamily: 'monospace'),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            if (auth.isAnonymous) ...[
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 8),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
 
-              // 1. SIGN-UP (Link Current Data)
-              const Text(
-                'CREATE ACCOUNT (Sign Up & Sync)',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.pink,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Link your current local customers and invoices to a new cloud account so they are saved securely.',
-                style: TextStyle(fontSize: 11, color: Colors.grey),
-              ),
-              const SizedBox(height: 12),
+                  // 1. SIGN-UP (Link Current Data)
+                  const Text(
+                    'CREATE ACCOUNT (Sign Up & Sync)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.pink,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Link your current local customers and invoices to a new cloud account so they are saved securely.',
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 12),
 
-              // Google Sign-Up Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    try {
-                      await auth.signInWithGoogle();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Account linked successfully!')),
-                        );
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Link failed. If you already have an account, use Sign In below.')),
-                        );
-                      }
-                    }
-                  },
-                  icon: const Icon(Icons.link),
-                  label: const Text('SIGN UP WITH GOOGLE'),
-                  style: ElevatedButton.styleFrom(
+                  // Google Sign-Up Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await auth.signInWithGoogle();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Account linked successfully!')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Link failed. If you already have an account, use Sign In below.')),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.link),
+                      label: const Text('SIGN UP WITH GOOGLE'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pink,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+
+                  // Apple Sign-Up Button (iOS only)
+                  if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+                    const SizedBox(height: 8),
+                    SignInWithAppleButton(
+                      onPressed: () async {
+                        try {
+                          await auth.signInWithApple();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Account linked successfully with Apple!')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Link failed. If you already have an account, use Sign In below.')),
+                            );
+                          }
+                        }
+                      },
+                      text: 'Sign up with Apple',
+                      style: SignInWithAppleButtonStyle.black,
+                      borderRadius: BorderRadius.circular(8),
+                      height: 40,
+                    ),
+                  ],
+
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  const SizedBox(height: 8),
+
+                  // 2. SIGN-IN (Switch to Existing Account)
+                  const Text(
+                    'ALREADY HAVE AN ACCOUNT? (Sign In)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Log in to retrieve your existing cloud-saved data. Note: Current local data will be replaced.',
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Google Sign-In Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await auth.signInWithGoogleDirectly();
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Login failed: $e')),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.login),
+                      label: const Text('SIGN IN WITH GOOGLE'),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+
+                  // Apple Sign-In Button (iOS only)
+                  if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+                    const SizedBox(height: 8),
+                    SignInWithAppleButton(
+                      onPressed: () async {
+                        try {
+                          await auth.signInWithAppleDirectly();
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Login failed: $e')),
+                            );
+                          }
+                        }
+                      },
+                      text: 'Sign in with Apple',
+                      style: SignInWithAppleButtonStyle.black,
+                      borderRadius: BorderRadius.circular(8),
+                      height: 40,
+                    ),
+                  ],
+                ],
+              )
+            : Row(
+                children: [
+                  const CircleAvatar(
                     backgroundColor: Colors.pink,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    child: Icon(Icons.person, color: Colors.white),
                   ),
-                ),
-              ),
-
-              // Apple Sign-Up Button (iOS only)
-              if (Theme.of(context).platform == TargetPlatform.iOS) ...[
-                const SizedBox(height: 8),
-                SignInWithAppleButton(
-                  onPressed: () async {
-                    try {
-                      await auth.signInWithApple();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Account linked successfully with Apple!')),
-                        );
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Link failed. If you already have an account, use Sign In below.')),
-                        );
-                      }
-                    }
-                  },
-                  text: 'Sign up with Apple',
-                  style: SignInWithAppleButtonStyle.black,
-                  borderRadius: BorderRadius.circular(8),
-                  height: 40,
-                ),
-              ],
-
-              const SizedBox(height: 20),
-              const Divider(),
-              const SizedBox(height: 8),
-
-              // 2. SIGN-IN (Switch to Existing Account)
-              const Text(
-                'ALREADY HAVE AN ACCOUNT? (Sign In)',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Log in to retrieve your existing cloud-saved data. Note: Current local data will be replaced.',
-                style: TextStyle(fontSize: 11, color: Colors.grey),
-              ),
-              const SizedBox(height: 12),
-
-              // Google Sign-In Button
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    try {
-                      await auth.signInWithGoogleDirectly();
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Login failed: $e')),
-                        );
-                      }
-                    }
-                  },
-                  icon: const Icon(Icons.login),
-                  label: const Text('SIGN IN WITH GOOGLE'),
-                  style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          auth.user?.email ?? 'Account Secured',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        GestureDetector(
+                          onTap: () {
+                            final uid = auth.user?.uid;
+                            if (uid != null) {
+                              Clipboard.setData(ClipboardData(text: uid));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('UID copied to clipboard!'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'UID: ${_truncateUid(auth.user?.uid)}',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.copy_rounded,
+                                size: 12,
+                                color: Colors.grey[500],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-
-              // Apple Sign-In Button (iOS only)
-              if (Theme.of(context).platform == TargetPlatform.iOS) ...[
-                const SizedBox(height: 8),
-                SignInWithAppleButton(
-                  onPressed: () async {
-                    try {
-                      await auth.signInWithAppleDirectly();
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Login failed: $e')),
-                        );
-                      }
-                    }
-                  },
-                  text: 'Sign in with Apple',
-                  style: SignInWithAppleButtonStyle.black,
-                  borderRadius: BorderRadius.circular(8),
-                  height: 40,
-                ),
-              ],
-            ] else ...[
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _handleLogout(context, auth),
-                  icon: const Icon(Icons.logout, color: Colors.red),
-                  label: const Text('LOGOUT', style: TextStyle(color: Colors.red)),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.red),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  IconButton(
+                    onPressed: () => _handleLogout(context, auth),
+                    icon: const Icon(Icons.logout, color: Colors.redAccent),
+                    tooltip: 'Logout',
                   ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  String _truncateUid(String? uid) {
+    if (uid == null || uid.isEmpty) return 'Unknown';
+    if (uid.length <= 10) return uid;
+    return '${uid.substring(0, 6)}...${uid.substring(uid.length - 4)}';
+  }
+
+  Widget _buildSubscriptionSection(BuildContext context) {
+    final subProvider = context.watch<SubscriptionProvider>();
+    final isPremium = subProvider.isPremium;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(
+          color: Color(0xFFFF4081),
+          width: 1.5,
+        ),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SubscriptionSettingsPage()),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF4081).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  color: Color(0xFFFF4081),
                 ),
               ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Subscription Plan',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFFF4081),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isPremium ? 'Premium Active (Studio Tier)' : 'Solo (Free tier)',
+                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
             ],
-          ],
+          ),
         ),
       ),
     );

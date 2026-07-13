@@ -3,10 +3,12 @@ import '../../data/models/customer_model.dart';
 import '../../data/models/invoice_model.dart';
 import '../../data/services/database_service.dart';
 import 'customer_provider.dart';
+import 'subscription_provider.dart';
 
 class InvoiceProvider extends ChangeNotifier {
   DatabaseService _dbService;
   CustomerProvider? _customerProvider;
+  SubscriptionProvider? _subscriptionProvider;
 
   InvoiceProvider(this._dbService);
 
@@ -22,6 +24,10 @@ class InvoiceProvider extends ChangeNotifier {
 
   void updateCustomerProvider(CustomerProvider customerProvider) {
     _customerProvider = customerProvider;
+  }
+
+  void updateSubscriptionProvider(SubscriptionProvider subscriptionProvider) {
+    _subscriptionProvider = subscriptionProvider;
   }
 
   Customer? _selectedCustomer;
@@ -221,6 +227,28 @@ class InvoiceProvider extends ChangeNotifier {
     _sessionEnd = invoice.sessionEnd;
     
     notifyListeners();
+  }
+
+  Future<int> getInvoiceCountForCurrentMonth() async {
+    final now = DateTime.now();
+    try {
+      return await _dbService.getInvoiceCountForMonth(now.year, now.month);
+    } catch (e) {
+      debugPrint("Error counting monthly invoices: $e");
+      return 0;
+    }
+  }
+
+  Future<bool> checkCanSaveInvoice() async {
+    if (_editingInvoiceId != null) {
+      return true;
+    }
+    if (_subscriptionProvider?.isPremium ?? false) {
+      return true;
+    }
+    final count = await getInvoiceCountForCurrentMonth();
+    final limit = _subscriptionProvider?.freeInvoiceLimit ?? 50;
+    return count < limit;
   }
 
   // Action
