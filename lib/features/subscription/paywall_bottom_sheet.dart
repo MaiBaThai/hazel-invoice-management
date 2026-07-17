@@ -1,24 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/providers/subscription_provider.dart';
 
 class PaywallBottomSheet extends StatefulWidget {
   final String titleExplanation;
+  final double topPadding;
 
   const PaywallBottomSheet({
     super.key,
     this.titleExplanation = "Unlock the ultimate invoicing experience",
+    this.topPadding = 0.0,
   });
 
   static Future<void> show(BuildContext context,
       {String titleExplanation = "Unlock the ultimate invoicing experience"}) {
+    final double topPadding = MediaQuery.of(context).padding.top;
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) =>
-          PaywallBottomSheet(titleExplanation: titleExplanation),
+          PaywallBottomSheet(
+            titleExplanation: titleExplanation,
+            topPadding: topPadding,
+          ),
     );
   }
 
@@ -56,7 +63,10 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
               color: Color(0xFF1E1428), // Deep purple premium background
             ),
             padding: EdgeInsets.fromLTRB(
-                24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+                16,
+                (widget.topPadding > 0 ? widget.topPadding : 12.0) + 8,
+                16,
+                MediaQuery.of(context).viewInsets.bottom + 16),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -73,7 +83,7 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
 
                   // Premium Header Logo
                   Row(
@@ -85,7 +95,7 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                         ).createShader(bounds),
                         child: const Icon(
                           Icons.auto_awesome,
-                          size: 32,
+                          size: 26,
                           color: Colors.white,
                         ),
                       ),
@@ -94,7 +104,7 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                         'Premium Access',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 26,
+                          fontSize: 22,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.5,
                           foreground: Paint()
@@ -106,32 +116,37 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
 
                   Text(
                     widget.titleExplanation,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.white70,
-                      fontSize: 14,
+                      fontSize: 13,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
 
                   // Features list
                   _buildFeatureRow(
                       Icons.electric_bolt_rounded,
-                      "Unlimited Invoices",
-                      "Create and save as many invoices as you need without limits"),
-                  _buildFeatureRow(Icons.add_photo_alternate_rounded,
+                      "Unlimited Invoices & Expenses",
+                      "Create and save as many invoices or expenses as you need without limits"),
+                  _buildFeatureRow(
+                      Icons.calendar_today_rounded,
+                      "Manage Bookings",
+                      "Schedule appointments, check conflicts, and sync with external calendars"),
+                  _buildFeatureRow(
+                      Icons.add_photo_alternate_rounded,
                       "Photo Journals",
-                      "Attach multiple photos to invoices to document your work"),
-                  _buildFeatureRow(Icons.qr_code_scanner_rounded, "VietQR Codes",
-                      "Generate payment QR codes dynamically on your invoices"),
-                  _buildFeatureRow(Icons.color_lens_rounded, "Pro PDF Templates",
-                      "Customize PDF colors, layouts, and logos to match your salon"),
+                      "Attach multiple photos to invoices to document your nail work"),
+                  _buildFeatureRow(
+                      Icons.analytics_rounded,
+                      "Advanced Analysis",
+                      "Track business performance and revenue trends with deep insights"),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   if (subProvider.isLoading && !isProcessing)
                     const Center(
@@ -194,7 +209,7 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                   else
                     ...packages.map((package) => _buildPackageCard(package)),
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 16),
 
                   // Purchase Button
                   ElevatedButton(
@@ -226,9 +241,9 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF4081),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 4,
                       shadowColor: const Color(0xFFFF4081).withOpacity(0.4),
@@ -246,64 +261,109 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                         : const Text(
                             "CONTINUE",
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.0,
                             ),
                           ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
-                  // Restore Purchases & Terms
+                  // Restore Purchases (Centered & Highlighted)
+                  Center(
+                    child: TextButton(
+                      onPressed: subProvider.isLoading
+                          ? null
+                          : () async {
+                              final success =
+                                  await subProvider.restorePurchases();
+                              if (success && mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        "🎉 Purchases successfully restored!"),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } else if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        "No previous purchases found to restore."),
+                                    backgroundColor: Colors.orangeAccent,
+                                  ),
+                                );
+                              }
+                            },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        "Restore Purchases",
+                        style: TextStyle(
+                          color: Color(0xFFFF4081),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Terms & Privacy Links
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       TextButton(
-                        onPressed: subProvider.isLoading
-                            ? null
-                            : () async {
-                                final success =
-                                    await subProvider.restorePurchases();
-                                if (success && mounted) {
-                                  Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                          "🎉 Purchases successfully restored!"),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-                                } else if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                          "No previous purchases found to restore."),
-                                      backgroundColor: Colors.orangeAccent,
-                                    ),
-                                  );
-                                }
-                              },
+                        onPressed: () => _launchUrl("https://invocie-management.web.app/terms.html"),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                         child: const Text(
-                          "Restore Purchases",
+                          "Terms of Use",
                           style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
+                            color: Colors.white38,
+                            fontSize: 10.5,
                             decoration: TextDecoration.underline,
                           ),
                         ),
                       ),
-                      const Text(
-                        "Terms of Service & Privacy Policy",
-                        style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 10,
+                      TextButton(
+                        onPressed: () => _launchUrl("https://invocie-management.web.app/privacy.html"),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text(
+                          "Privacy Policy",
+                          style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 10.5,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
+            ),
+          ),
+          Positioned(
+            top: (widget.topPadding > 0 ? widget.topPadding : 12.0) + 4,
+            right: 12,
+            child: IconButton(
+              icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 24),
+              onPressed: () => Navigator.pop(context),
             ),
           ),
           if (isProcessing)
@@ -340,23 +400,23 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
 
   Widget _buildFeatureRow(IconData icon, String title, String subtitle) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
+      padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: const Color(0xFFFF4081).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
-              size: 20,
+              size: 16,
               color: const Color(0xFFFF4081),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,16 +425,16 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                   title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 15,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 1),
                 Text(
                   subtitle,
                   style: const TextStyle(
                     color: Colors.white54,
-                    fontSize: 12.5,
+                    fontSize: 11.5,
                   ),
                 ),
               ],
@@ -405,13 +465,13 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
               ? Colors.white.withOpacity(0.08)
               : Colors.white.withOpacity(0.03),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? const Color(0xFFFF4081) : Colors.white10,
             width: isSelected ? 2 : 1,
@@ -421,8 +481,8 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
           children: [
             // Checkbox selection ring
             Container(
-              width: 22,
-              height: 22,
+              width: 18,
+              height: 18,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
@@ -433,8 +493,8 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
               child: isSelected
                   ? Center(
                       child: Container(
-                        width: 12,
-                        height: 12,
+                        width: 10,
+                        height: 10,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           color: Color(0xFFFF4081),
@@ -443,7 +503,7 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                     )
                   : null,
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,26 +514,26 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                         displayName,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       if (isYearly) ...[
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                              horizontal: 6, vertical: 1.5),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               colors: [Color(0xFFFFB74D), Color(0xFFFFA726)],
                             ),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Text(
                             "SAVE 45%",
                             style: TextStyle(
                               color: Colors.black,
-                              fontSize: 9,
+                              fontSize: 8,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -481,14 +541,14 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                       ]
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Text(
                     isYearly
                         ? "Only $pricePerMonth/month, billed annually"
                         : "Billed monthly, cancel anytime",
                     style: TextStyle(
                       color: isSelected ? Colors.white70 : Colors.white38,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -498,7 +558,7 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
               package.storeProduct.priceString,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -538,5 +598,16 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
       buffer.write(str[i]);
     }
     return buffer.toString();
+  }
+
+  Future<void> _launchUrl(String urlString) async {
+    try {
+      final Uri url = Uri.parse(urlString);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint("Could not launch $urlString: $e");
+    }
   }
 }

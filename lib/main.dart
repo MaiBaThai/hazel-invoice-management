@@ -7,6 +7,9 @@ import 'package:nms/core/providers/settings_provider.dart';
 import 'package:nms/core/providers/expense_provider.dart';
 import 'package:nms/core/providers/auth_provider.dart';
 import 'package:nms/core/providers/subscription_provider.dart';
+import 'package:nms/core/providers/booking_provider.dart';
+import 'package:nms/features/calendar/calendar_page.dart';
+import 'package:nms/core/widgets/custom_bottom_nav_bar.dart';
 import 'package:nms/features/invoice/invoice_page.dart';
 import 'package:nms/features/expenses/expenses_page.dart';
 import 'package:nms/features/dashboard/dashboard_page.dart';
@@ -104,6 +107,10 @@ void main() async {
           create: (context) => ExpenseProvider(context.read<DatabaseService>()),
           update: (_, db, previous) => previous!..updateDbService(db),
         ),
+        ChangeNotifierProxyProvider<DatabaseService, BookingProvider>(
+          create: (context) => BookingProvider(context.read<DatabaseService>()),
+          update: (_, db, previous) => previous!..updateDbService(db),
+        ),
       ],
       child: const NMSApp(),
     ),
@@ -142,6 +149,7 @@ class MainNavigationPageState extends State<MainNavigationPage> {
   static const List<Widget> _pages = <Widget>[
     InvoicePage(),
     ExpensesPage(),
+    CalendarPage(),
     DashboardPage(),
     CustomersPage(),
     SettingsPage(),
@@ -157,14 +165,14 @@ class MainNavigationPageState extends State<MainNavigationPage> {
     setState(() {
       _selectedIndex = index;
     });
-    final List<String> screenNames = ['Invoice', 'Expenses', 'Dashboard', 'Customers', 'Settings'];
+    final List<String> screenNames = ['Invoice', 'Expenses', 'Calendar', 'Dashboard', 'Customers', 'Settings'];
     if (index >= 0 && index < screenNames.length) {
       FirebaseAnalytics.instance.logScreenView(screenName: screenNames[index]);
     }
-    if (index == 2) {
+    if (index == 3) {
       Provider.of<DashboardProvider>(context, listen: false)
           .loadDashboardData();
-    } else if (index == 3) {
+    } else if (index == 4) {
       Provider.of<CustomerProvider>(context, listen: false).loadCustomers();
     }
   }
@@ -193,34 +201,40 @@ class MainNavigationPageState extends State<MainNavigationPage> {
       body: Center(
         child: _pages.elementAt(_selectedIndex),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long),
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: [
+          CustomBottomNavBarItem(
+            icon: Icons.receipt_long,
             label: 'Invoice',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.payments_outlined),
-            activeIcon: Icon(Icons.payments),
+          CustomBottomNavBarItem(
+            icon: Icons.payments_outlined,
+            activeIcon: Icons.payments,
             label: 'Expenses',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
+          CustomBottomNavBarItem(
+            icon: Icons.calendar_month_outlined,
+            activeIcon: Icons.calendar_month,
+            label: 'Calendar',
+          ),
+          CustomBottomNavBarItem(
+            icon: Icons.dashboard_outlined,
+            activeIcon: Icons.dashboard,
             label: 'Dashboard',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
+          CustomBottomNavBarItem(
+            icon: Icons.people_outline,
+            activeIcon: Icons.people,
             label: 'Customers',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
+          CustomBottomNavBarItem(
+            icon: Icons.settings_outlined,
+            activeIcon: Icons.settings,
             label: 'Settings',
           ),
         ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.pink,
-        onTap: _onItemTapped,
       ),
     );
   }

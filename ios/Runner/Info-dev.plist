@@ -81,6 +81,8 @@
 	<string>Allow camera access to capture product photos for invoices</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Allow photo library access to select product photos for invoices</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>This app requires calendar access to automatically sync your bookings with your iPhone Calendar.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

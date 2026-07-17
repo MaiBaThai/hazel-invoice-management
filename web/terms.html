@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Use - My Salon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: #151c2c;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #ec4899;
+      --accent-rgb: 236, 72, 153;
+      --accent-hover: #db2777;
+      --border: #1f2937;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 3rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: -100px;
+      right: -100px;
+      width: 200px;
+      height: 200px;
+      background: rgba(var(--accent-rgb), 0.15);
+      filter: blur(80px);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    header {
+      margin-bottom: 2.5rem;
+      text-align: center;
+    }
+
+    .logo-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      border-radius: 16px;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.3);
+    }
+
+    .logo-icon {
+      color: white;
+      font-weight: 700;
+      font-size: 2rem;
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(to right, #ffffff, #d1d5db);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    section {
+      margin-bottom: 2rem;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+    }
+
+    h2::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 2px;
+      margin-right: 10px;
+    }
+
+    p {
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+
+    ul {
+      list-style-type: none;
+      margin-bottom: 1.5rem;
+      padding-left: 0.5rem;
+    }
+
+    li {
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      position: relative;
+      padding-left: 1.5rem;
+    }
+
+    li::before {
+      content: "•";
+      color: var(--accent);
+      font-weight: bold;
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: color 0.2s ease;
+      font-weight: 500;
+    }
+
+    a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-container">
+        <span class="logo-icon">S</span>
+      </div>
+      <h1>Terms of Use</h1>
+      <p class="subtitle">Effective Date: June 9, 2026</p>
+    </header>
+
+    <main>
+      <section>
+        <h2>1. Acceptance of Terms</h2>
+        <p>By accessing or using the My Salon application, you agree to be bound by these Terms of Use. If you do not agree to these terms, please do not use the application.</p>
+      </section>
+
+      <section>
+        <h2>2. Description of Service</h2>
+        <p>My Salon is a business management tool designed for salon owners and independent service providers. Key services include creating and tracking invoices, managing booking schedules, syncing appointments, and organizing product or client portfolios. Services are provided on an "as-is" basis.</p>
+      </section>
+
+      <section>
+        <h2>3. Subscriptions & Payments</h2>
+        <p>We offer Monthly and Yearly Premium subscription packages that unlock advanced features (such as unlimited invoices, advanced analytics, and photo attachments). Payments are processed securely via Apple App Store Connect.</p>
+        <ul>
+          <li><strong>Auto-Renewal:</strong> Subscriptions automatically renew unless auto-renew is turned off at least 24 hours before the end of the current period.</li>
+          <li><strong>Billing:</strong> Your Apple Account will be charged for renewal within 24 hours prior to the end of the current billing cycle.</li>
+          <li><strong>Cancellation:</strong> You can manage or cancel your subscription at any time through your Apple ID Account Settings.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>4. User Content & Conduct</h2>
+        <p>You are solely responsible for any content you upload, including client names, transactional records, and workspace photos. You agree not to upload content that is illegal, offensive, or violates the intellectual property rights of others.</p>
+      </section>
+
+      <section>
+        <h2>5. Limitation of Liability</h2>
+        <p>My Salon and its developers shall not be liable for any indirect, incidental, or consequential damages resulting from your use or inability to use the application, including data loss or scheduling errors.</p>
+      </section>
+
+      <section>
+        <h2>6. Termination</h2>
+        <p>We reserve the right to suspend or terminate your access to the application at our sole discretion, without notice, if we believe your conduct violates these terms or is harmful to other users.</p>
+      </section>
+
+      <section>
+        <h2>7. Governing Law</h2>
+        <p>These terms shall be governed by and construed in accordance with the laws applicable to Apple's Developer Program Agreements, without regard to conflict of law principles.</p>
+      </section>
+
+      <section>
+        <h2>8. Contact Us</h2>
+        <p>For questions or support inquiries regarding these Terms of Use, please reach out to <a href="mailto:thai.maiba1984@gmail.com">thai.maiba1984@gmail.com</a>.</p>
+      </section>
+    </main>
+
+    <footer>
+      &copy; 2026 My Salon. All rights reserved.
+    </footer>
+  </div>
+</body>
+</html>

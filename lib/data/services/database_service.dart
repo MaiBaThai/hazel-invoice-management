@@ -6,6 +6,8 @@ import '../models/invoice_model.dart';
 import '../models/expense_model.dart';
 import '../models/app_settings_model.dart';
 import '../models/system_config_model.dart';
+import '../models/booking_model.dart';
+
 
 class DatabaseService {
   final FirebaseFirestore _db;
@@ -80,6 +82,11 @@ class DatabaseService {
   CollectionReference get _expensesRef => userId == null 
       ? _db.collection('guests').doc('null').collection('expenses') 
       : _db.collection('users').doc(userId).collection('expenses');
+
+  CollectionReference get _bookingsRef => userId == null 
+      ? _db.collection('guests').doc('null').collection('bookings') 
+      : _db.collection('users').doc(userId).collection('bookings');
+
 
   DocumentReference get _settingsRef => userId == null 
       ? _db.collection('guests').doc('null').collection('configs').doc('app_settings')
@@ -421,5 +428,50 @@ class DatabaseService {
       }
       return [];
     });
+  }
+
+  // --- Bookings & Scheduling ---
+
+  Stream<List<Booking>> watchBookings() {
+    return _bookingsRef.orderBy('start_time').snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Booking.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+          .toList();
+    });
+  }
+
+  Future<String> addBooking(Booking booking) async {
+    await _ensureUserSynced();
+    final docRef = await _bookingsRef.add(booking.toMap());
+    return docRef.id;
+  }
+
+  Future<void> updateBooking(Booking booking) async {
+    await _ensureUserSynced();
+    await _bookingsRef.doc(booking.id).set(booking.toMap());
+  }
+
+  Future<void> deleteBooking(String bookingId) async {
+    await _ensureUserSynced();
+    await _bookingsRef.doc(bookingId).delete();
+  }
+
+  Stream<DocumentSnapshot> watchCalendarSettings() {
+    return _db
+        .collection('users')
+        .doc(userId)
+        .collection('configs')
+        .doc('calendar_settings')
+        .snapshots();
+  }
+
+  Future<void> updateCalendarSettings(Map<String, dynamic> data) async {
+    await _ensureUserSynced();
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('configs')
+        .doc('calendar_settings')
+        .set(data, SetOptions(merge: true));
   }
 }

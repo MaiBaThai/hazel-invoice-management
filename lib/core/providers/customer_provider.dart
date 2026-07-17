@@ -248,6 +248,22 @@ class CustomerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<Customer> createNewCustomer(String name, String phone) async {
+    try {
+      final customer = Customer(id: '', name: name, phone: phone);
+      final id = await _dbService.addCustomer(customer).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Connection timeout. Please check your internet or permissions.'),
+      );
+      final newCustomer = customer.copyWith(id: id);
+      addCustomerLocally(newCustomer);
+      return newCustomer;
+    } catch (e) {
+      debugPrint('Error creating customer: $e');
+      rethrow;
+    }
+  }
+
   void updateCustomerTotalSpent(String customerId, double totalSpentAddition, DateTime lastVisit) {
     final index = _allCustomers.indexWhere((c) => c.id == customerId);
     if (index != -1) {

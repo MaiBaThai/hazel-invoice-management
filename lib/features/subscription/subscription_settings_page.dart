@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/providers/subscription_provider.dart';
-import 'paywall_bottom_sheet.dart';
 
 class SubscriptionSettingsPage extends StatelessWidget {
   const SubscriptionSettingsPage({super.key});
@@ -35,13 +34,13 @@ class SubscriptionSettingsPage extends StatelessWidget {
             ),
             body: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Current Plan Status card
                     _buildStatusCard(context, subProvider),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 16),
 
                     if (!isPremium) ...[
                       // Premium Upgrade Header
@@ -49,11 +48,11 @@ class SubscriptionSettingsPage extends StatelessWidget {
                         "Choose a Premium Plan",
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 10),
 
                       // Show paywall inline if unsubscribed
                       if (subProvider.isLoading && !isProcessing)
@@ -119,7 +118,7 @@ class SubscriptionSettingsPage extends StatelessWidget {
                         ...packages.map((package) => _buildSettingsPackageCard(
                             context, subProvider, package)),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 8),
 
                       TextButton(
                         onPressed: subProvider.isLoading
@@ -146,7 +145,7 @@ class SubscriptionSettingsPage extends StatelessWidget {
                                 }
                               },
                         child: const Text(
-                          "Restore Previous Purchases",
+                           "Restore Previous Purchases",
                           style: TextStyle(
                             color: Color(0xFFFF4081),
                             fontWeight: FontWeight.bold,
@@ -158,18 +157,45 @@ class SubscriptionSettingsPage extends StatelessWidget {
                       _buildPremiumDetailsList(context, subProvider),
                     ],
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 16),
 
-                    // Support or standard info text
-                    const Center(
-                      child: Text(
-                        "For questions or receipt inquiries, please contact support email",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white30,
-                          fontSize: 11,
+                    // Terms & Privacy Links
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () => _launchUrl("https://invocie-management.web.app/terms.html"),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            "Terms of Use",
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 10.5,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
                         ),
-                      ),
+                        TextButton(
+                          onPressed: () => _launchUrl("https://invocie-management.web.app/privacy.html"),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            "Privacy Policy",
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 10.5,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -243,7 +269,7 @@ class SubscriptionSettingsPage extends StatelessWidget {
     final isPremium = subProvider.isPremium;
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isPremium
@@ -279,7 +305,7 @@ class SubscriptionSettingsPage extends StatelessWidget {
                 isPremium ? "STUDIO TIER" : "SOLO TIER",
                 style: TextStyle(
                   color: isPremium ? Colors.white : Colors.white60,
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.2,
                 ),
@@ -287,19 +313,20 @@ class SubscriptionSettingsPage extends StatelessWidget {
               Icon(
                 isPremium ? Icons.auto_awesome : Icons.person_outline_rounded,
                 color: isPremium ? Colors.white : Colors.white70,
+                size: 20,
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             isPremium ? "Premium Active" : "Free Plan",
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             isPremium
                 ? "You have complete, unrestricted access to all Premium features."
@@ -307,7 +334,7 @@ class SubscriptionSettingsPage extends StatelessWidget {
             style: TextStyle(
               color:
                   isPremium ? Colors.white.withOpacity(0.85) : Colors.white54,
-              fontSize: 14,
+              fontSize: 12,
             ),
           ),
         ],
@@ -326,8 +353,8 @@ class SubscriptionSettingsPage extends StatelessWidget {
         : "Month-to-month access, cancel anytime";
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.04),
         borderRadius: BorderRadius.circular(16),
@@ -345,12 +372,12 @@ class SubscriptionSettingsPage extends StatelessWidget {
                       title,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     if (isYearly) ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 1.5),
@@ -364,24 +391,24 @@ class SubscriptionSettingsPage extends StatelessWidget {
                           "SAVE 45%",
                           style: TextStyle(
                               color: Colors.black,
-                              fontSize: 8.5,
+                              fontSize: 8,
                               fontWeight: FontWeight.bold),
                         ),
                       ),
                     ]
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   description,
-                  style: const TextStyle(color: Colors.white38, fontSize: 12),
+                  style: const TextStyle(color: Colors.white38, fontSize: 11),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
                   package.storeProduct.priceString,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -405,12 +432,15 @@ class SubscriptionSettingsPage extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF4081),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text("Select"),
+            child: const Text(
+              "Select",
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -477,5 +507,16 @@ class SubscriptionSettingsPage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _launchUrl(String urlString) async {
+    try {
+      final Uri url = Uri.parse(urlString);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint("Could not launch $urlString: $e");
+    }
   }
 }
