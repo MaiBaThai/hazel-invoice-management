@@ -151,14 +151,14 @@ The Web app requires CORS to be configured on Firebase Storage to allow cross-or
      }
    ]
    ```
-2. Set CORS configuration via Google Cloud SDK (`gsutil`):
+2. Set CORS configuration via Google Cloud CLI (`gcloud storage`):
 
    ```bash
    # Development Storage
-   gsutil cors set cors.json gs://invocie-management.firebasestorage.app
+   gcloud storage buckets update gs://invocie-management.firebasestorage.app --cors-file=cors.json
 
    # Production Storage
-   gsutil cors set cors.json gs://invoices-management-c4ef0.firebasestorage.app
+   gcloud storage buckets update gs://invoices-management-c4ef0.firebasestorage.app --cors-file=cors.json
    ```
 
 ---

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/providers/subscription_provider.dart';
+import 'widgets/restore_warning_dialog.dart';
 
 class SubscriptionSettingsPage extends StatelessWidget {
   const SubscriptionSettingsPage({super.key});
@@ -124,6 +125,10 @@ class SubscriptionSettingsPage extends StatelessWidget {
                         onPressed: subProvider.isLoading
                             ? null
                             : () async {
+                                if (!subProvider.isPremium && context.mounted) {
+                                  final confirm = await RestoreWarningDialog.show(context);
+                                  if (!confirm) return;
+                                }
                                 final success =
                                     await subProvider.restorePurchases();
                                 if (success && context.mounted) {

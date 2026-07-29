@@ -41,7 +41,11 @@ class _InvoicePageState extends State<InvoicePage> {
       final index = _nameControllers.length;
       final service = provider.services[index];
       _nameControllers.add(TextEditingController(text: service.serviceName));
-      final priceText = service.price == 0 ? '' : (service.price == service.price.toInt() ? service.price.toInt().toString() : service.price.toString());
+      final priceText = service.price == 0
+          ? ''
+          : (service.price == service.price.toInt()
+              ? service.price.toInt().toString()
+              : service.price.toString());
       _priceControllers.add(TextEditingController(text: priceText));
     }
     // Remove extra controllers if needed
@@ -72,32 +76,37 @@ class _InvoicePageState extends State<InvoicePage> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<InvoiceProvider>(context);
-    
+
     // Check if provider was reset from elsewhere (like Summary Dialog)
-    if (provider.selectedCustomer == null && provider.services.isEmpty && provider.discountPercent == 0) {
-       if (_nameControllers.isNotEmpty || _discountController.text.isNotEmpty) {
-          // Force clear local controllers if provider is empty
-          for (var c in _nameControllers) {
-            c.dispose();
-          }
-          for (var c in _priceControllers) {
-            c.dispose();
-          }
-          _nameControllers.clear();
-          _priceControllers.clear();
-          _discountController.clear();
-       }
+    if (provider.selectedCustomer == null &&
+        provider.services.isEmpty &&
+        provider.discountPercent == 0) {
+      if (_nameControllers.isNotEmpty || _discountController.text.isNotEmpty) {
+        // Force clear local controllers if provider is empty
+        for (var c in _nameControllers) {
+          c.dispose();
+        }
+        for (var c in _priceControllers) {
+          c.dispose();
+        }
+        _nameControllers.clear();
+        _priceControllers.clear();
+        _discountController.clear();
+      }
     }
 
     _syncWithProvider(provider);
 
     final settingsProvider = Provider.of<SettingsProvider>(context);
     final subProvider = context.watch<SubscriptionProvider>();
-    final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'My Salon', currencySymbol: '\$');
+    final businessConfig = settingsProvider.settings?.businessConfig ??
+        BusinessConfig(businessName: 'My Salon', currencySymbol: '\$');
 
     String formatCurrency(num amount) {
       final formatted = NumberFormat.decimalPattern().format(amount);
-      return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
+      return businessConfig.isPrefix
+          ? '${businessConfig.currencySymbol}$formatted'
+          : '$formatted${businessConfig.currencySymbol}';
     }
 
     return GestureDetector(
@@ -107,8 +116,10 @@ class _InvoicePageState extends State<InvoicePage> {
         appBar: AppBar(
           title: Column(
             children: [
-              Text(businessConfig.businessName, style: const TextStyle(fontWeight: FontWeight.bold)),
-              const Text('v1.3.7', style: TextStyle(fontSize: 10, color: Colors.grey)),
+              Text(businessConfig.businessName,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              const Text('v1.3.7',
+                  style: TextStyle(fontSize: 10, color: Colors.grey)),
             ],
           ),
           centerTitle: true,
@@ -120,346 +131,406 @@ class _InvoicePageState extends State<InvoicePage> {
           ],
         ),
         body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (!subProvider.isPremium)
-              FutureBuilder<int>(
-                future: provider.getInvoiceCountForCurrentMonth(),
-                builder: (context, snapshot) {
-                  final count = snapshot.data ?? 0;
-                  final limit = subProvider.freeInvoiceLimit;
-                  final percent = (count / limit).clamp(0.0, 1.0);
-                  
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.pink.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.pink.withOpacity(0.1)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Monthly Invoices',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.pink[700],
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!subProvider.isPremium)
+                FutureBuilder<int>(
+                  future: provider.getInvoiceCountForCurrentMonth(),
+                  builder: (context, snapshot) {
+                    final count = snapshot.data ?? 0;
+                    final limit = subProvider.freeInvoiceLimit;
+                    final percent = (count / limit).clamp(0.0, 1.0);
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 20),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.pink.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.pink.withOpacity(0.1)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Monthly Invoices',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.pink[700],
+                                ),
                               ),
-                            ),
-                            Text(
-                              '$count / $limit free',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.pink[700],
+                              Text(
+                                '$count / $limit free',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.pink[700],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: percent,
-                            backgroundColor: Colors.pink.withOpacity(0.1),
-                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.pink),
-                            minHeight: 6,
+                            ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: percent,
+                              backgroundColor: Colors.pink.withOpacity(0.1),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Colors.pink),
+                              minHeight: 6,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              const Text('Customer',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _InvoiceInfoCard(
+                provider: provider,
+                showSessionTimeError: _showSessionTimeError,
+                onSessionTimeTap: () {
+                  setState(() {
+                    _showSessionTimeError = false;
+                  });
+                },
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Services',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  TextButton.icon(
+                    onPressed: () {
+                      provider.addService();
+                      setState(() {});
+                    },
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add Custom'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Quick Add Chips
+              Consumer<SettingsProvider>(
+                builder: (context, settingsProvider, child) {
+                  final predefinedServices =
+                      settingsProvider.settings?.predefinedServices ?? [];
+                  if (predefinedServices.isEmpty) return const SizedBox();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: predefinedServices.map((s) {
+                        return ActionChip(
+                          label: Text(
+                              '${s.serviceName} (${formatCurrency(s.price)})'),
+                          backgroundColor: Colors.pink.withOpacity(0.05),
+                          side: BorderSide.none,
+                          onPressed: () {
+                            final emptyIndex = provider.services.indexWhere(
+                                (item) =>
+                                    item.serviceName.isEmpty &&
+                                    item.price == 0);
+                            if (emptyIndex != -1) {
+                              provider.updateService(
+                                  emptyIndex, s.serviceName, s.price);
+                              _nameControllers[emptyIndex].text = s.serviceName;
+                              // Format without .0 if it's a whole number
+                              _priceControllers[emptyIndex].text =
+                                  s.price == s.price.roundToDouble()
+                                      ? s.price.toInt().toString()
+                                      : s.price.toString();
+                            } else {
+                              provider.addService();
+                              _syncWithProvider(provider);
+                              final lastIndex = provider.services.length - 1;
+                              provider.updateService(
+                                  lastIndex, s.serviceName, s.price);
+                              _nameControllers[lastIndex].text = s.serviceName;
+                              _priceControllers[lastIndex].text =
+                                  s.price == s.price.roundToDouble()
+                                      ? s.price.toInt().toString()
+                                      : s.price.toString();
+                            }
+                            setState(() {});
+                          },
+                        );
+                      }).toList(),
                     ),
                   );
                 },
               ),
-            const Text('Customer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            _CustomerSelector(provider: provider),
-            const SizedBox(height: 20),
-            const Text('Session Time', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            _SessionDurationSelector(
-              provider: provider,
-              showError: _showSessionTimeError,
-              onTap: () {
-                setState(() {
-                  _showSessionTimeError = false;
-                });
-              },
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Services', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                TextButton.icon(
-                  onPressed: () {
-                    provider.addService();
-                    setState(() {});
-                  },
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add Custom'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // Quick Add Chips
-            Consumer<SettingsProvider>(
-              builder: (context, settingsProvider, child) {
-                final predefinedServices = settingsProvider.settings?.predefinedServices ?? [];
-                if (predefinedServices.isEmpty) return const SizedBox();
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: predefinedServices.map((s) {
-                      return ActionChip(
-                        label: Text('${s.serviceName} (${formatCurrency(s.price)})'),
-                        backgroundColor: Colors.pink.withOpacity(0.1),
-                        side: BorderSide.none,
-                        onPressed: () {
-                          final emptyIndex = provider.services.indexWhere((item) => item.serviceName.isEmpty && item.price == 0);
-                          if (emptyIndex != -1) {
-                            provider.updateService(emptyIndex, s.serviceName, s.price);
-                            _nameControllers[emptyIndex].text = s.serviceName;
-                            // Format without .0 if it's a whole number
-                            _priceControllers[emptyIndex].text = s.price == s.price.roundToDouble() ? s.price.toInt().toString() : s.price.toString();
-                          } else {
-                            provider.addService();
-                            _syncWithProvider(provider);
-                            final lastIndex = provider.services.length - 1;
-                            provider.updateService(lastIndex, s.serviceName, s.price);
-                            _nameControllers[lastIndex].text = s.serviceName;
-                            _priceControllers[lastIndex].text = s.price == s.price.roundToDouble() ? s.price.toInt().toString() : s.price.toString();
-                          }
-                          setState((){});
-                        },
-                      );
-                    }).toList(),
-                  ),
-                );
-              },
-            ),
-            // Service List
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: provider.services.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                return Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: TextField(
-                        controller: _nameControllers[index],
-                        decoration: InputDecoration(
-                          hintText: 'Service (e.g. Sơn Gel)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        onChanged: (val) => provider.updateService(index, val, provider.services[index].price),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: _priceControllers[index],
-                        decoration: InputDecoration(
-                          hintText: 'Price',
-                          prefixText: businessConfig.isPrefix ? businessConfig.currencySymbol : null,
-                          suffixText: !businessConfig.isPrefix ? businessConfig.currencySymbol : null,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (val) => provider.updateService(index, provider.services[index].serviceName, double.tryParse(val) ?? 0),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
-                      onPressed: () {
-                        provider.removeService(index);
-                        setState(() {
-                           _nameControllers[index].dispose();
-                           _nameControllers.removeAt(index);
-                           _priceControllers[index].dispose();
-                           _priceControllers.removeAt(index);
-                        });
-                      },
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-            const Text('Summary', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            // Summary UI
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Service List
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: provider.services.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  return Row(
                     children: [
-                      const Text('Subtotal', style: TextStyle(color: Colors.grey)),
-                      Text(formatCurrency(provider.subtotal), style: const TextStyle(fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  const Divider(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Discount (%)', style: TextStyle(color: Colors.grey)),
-                      SizedBox(
-                        width: 100,
+                      Text(
+                        '${index + 1}.',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[400],
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 3,
                         child: TextField(
-                          controller: _discountController,
-                          textAlign: TextAlign.right,
+                          controller: _nameControllers[index],
                           decoration: InputDecoration(
-                            isDense: true,
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            hintText: 'Service (e.g. Sơn Gel)',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Colors.pink),
+                              borderSide: BorderSide(color: Colors.grey[200]!),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Colors.pink.withOpacity(0.3)),
+                              borderSide: BorderSide(color: Colors.grey[200]!),
                             ),
-                            hintText: '0',
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.pink),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
                           ),
-                          keyboardType: TextInputType.number,
-                          onChanged: (val) => provider.setDiscount(double.tryParse(val) ?? 0),
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pink),
+                          onChanged: (val) => provider.updateService(
+                              index, val, provider.services[index].price),
                         ),
                       ),
-                    ],
-                  ),
-                  const Divider(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                      Text(
-                        formatCurrency(provider.finalTotal),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.pink),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          controller: _priceControllers[index],
+                          decoration: InputDecoration(
+                            hintText: 'Price',
+                            prefixText: businessConfig.isPrefix
+                                ? businessConfig.currencySymbol
+                                : null,
+                            suffixText: !businessConfig.isPrefix
+                                ? businessConfig.currencySymbol
+                                : null,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.grey[200]!),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.grey[200]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.pink),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (val) => provider.updateService(
+                              index,
+                              provider.services[index].serviceName,
+                              double.tryParse(val) ?? 0),
+                        ),
+                      ),
+                      IconButton(
+                        icon:
+                            const Icon(Icons.delete_outline, color: Colors.red),
+                        onPressed: () {
+                          provider.removeService(index);
+                          setState(() {
+                            _nameControllers[index].dispose();
+                            _nameControllers.removeAt(index);
+                            _priceControllers[index].dispose();
+                            _priceControllers.removeAt(index);
+                          });
+                        },
                       ),
                     ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  if (provider.selectedCustomer == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please select a customer')),
-                    );
-                    return;
-                  }
-                  if (provider.services.isEmpty || provider.subtotal <= 0) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Invoice must have at least one service')),
-                    );
-                    return;
-                  }
-                  if (!provider.isEditing && (provider.sessionStart == null || provider.sessionEnd == null)) {
-                    setState(() {
-                      _showSessionTimeError = true;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please select session date & time')),
-                    );
-                    return;
-                  }
-                  showDialog(context: context, builder: (context) => const InvoiceSummaryDialog());
+                  );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.pink,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('REVIEW INVOICE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
               ),
-            ),
-          ],
-        ),
-      ),
-    ),);
-  }
-}
-
-class _CustomerSelector extends StatelessWidget {
-  final InvoiceProvider provider;
-  const _CustomerSelector({required this.provider});
-
-  @override
-  Widget build(BuildContext context) {
-    final customer = provider.selectedCustomer;
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.pink.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.pink.withOpacity(0.1)),
-      ),
-      child: InkWell(
-        onTap: () => showDialog(context: context, builder: (context) => const CustomerSearchDialog()),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: Colors.pink,
-                child: Icon(customer == null ? Icons.person_outline : Icons.person, color: Colors.white),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      customer?.name ?? 'No customer selected',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: customer == null ? Colors.grey : Colors.black,
-                      ),
+              const SizedBox(height: 24),
+              const Text('Invoice Summary',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              // Summary UI
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                    if (customer != null)
-                      Text(customer.phone, style: const TextStyle(color: Colors.grey)),
+                  ],
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Subtotal',
+                            style: TextStyle(
+                                color: Colors.grey[600], fontSize: 14)),
+                        Text(formatCurrency(provider.subtotal),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 15)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Discount (%)',
+                            style: TextStyle(
+                                color: Colors.grey[600], fontSize: 14)),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (provider.discountPercent > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: Text(
+                                  '-${formatCurrency(provider.subtotal * provider.discountPercent / 100)}',
+                                  style: const TextStyle(
+                                      color: Colors.pink,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14),
+                                ),
+                              ),
+                            SizedBox(
+                              width: 70,
+                              height: 36,
+                              child: TextField(
+                                controller: _discountController,
+                                textAlign: TextAlign.center,
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  filled: true,
+                                  fillColor: Colors.pink.withOpacity(0.03),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 8),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                        color: Colors.pink.withOpacity(0.2)),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                        color: Colors.pink.withOpacity(0.2)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide:
+                                        const BorderSide(color: Colors.pink),
+                                  ),
+                                  hintText: '0',
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (val) => provider
+                                    .setDiscount(double.tryParse(val) ?? 0),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.pink,
+                                    fontSize: 14),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Total',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(
+                          formatCurrency(provider.finalTotal),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 22,
+                              color: Colors.pink),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              if (customer == null)
-                TextButton(
-                  onPressed: () => showDialog(context: context, builder: (context) => const AddCustomerDialog()),
-                  child: const Text('ADD NEW'),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (provider.selectedCustomer == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Please select a customer')),
+                      );
+                      return;
+                    }
+                    if (provider.services.isEmpty || provider.subtotal <= 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content:
+                                Text('Invoice must have at least one service')),
+                      );
+                      return;
+                    }
+                    if (!provider.isEditing &&
+                        (provider.sessionStart == null ||
+                            provider.sessionEnd == null)) {
+                      setState(() {
+                        _showSessionTimeError = true;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Please select session date & time')),
+                      );
+                      return;
+                    }
+                    showDialog(
+                        context: context,
+                        builder: (context) => const InvoiceSummaryDialog());
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.pink,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Text('REVIEW INVOICE',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2)),
                 ),
-              if (customer != null)
-                const Icon(Icons.chevron_right, color: Colors.grey),
+              ),
             ],
           ),
         ),
@@ -468,120 +539,200 @@ class _CustomerSelector extends StatelessWidget {
   }
 }
 
-class _SessionDurationSelector extends StatelessWidget {
+class _InvoiceInfoCard extends StatelessWidget {
   final InvoiceProvider provider;
-  final bool showError;
-  final VoidCallback onTap;
+  final bool showSessionTimeError;
+  final VoidCallback onSessionTimeTap;
 
-  const _SessionDurationSelector({
+  const _InvoiceInfoCard({
     required this.provider,
-    required this.showError,
-    required this.onTap,
+    required this.showSessionTimeError,
+    required this.onSessionTimeTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final customer = provider.selectedCustomer;
     final start = provider.sessionStart;
     final end = provider.sessionEnd;
-    final hasSelection = start != null && end != null;
-    
-    final dateStr = hasSelection ? DateFormat('dd/MM/yyyy').format(start) : '';
-    final timeStr = hasSelection ? '${DateFormat('HH:mm').format(start)} - ${DateFormat('HH:mm').format(end)}' : '';
-    
+    final hasSession = start != null && end != null;
+
+    final dateStr = hasSession ? DateFormat('dd/MM/yyyy').format(start) : '';
+    final timeStr = hasSession
+        ? '${DateFormat('HH:mm').format(start)} - ${DateFormat('HH:mm').format(end)}'
+        : '';
+
     String durationText = '';
-    if (hasSelection) {
+    if (hasSession) {
       final diffMinutes = end.difference(start).inMinutes;
       final hours = diffMinutes / 60.0;
-      final formattedHours = hours.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+      final formattedHours =
+          hours.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
       durationText = '$formattedHours hr${hours == 1 ? '' : 's'}';
     }
 
-    final Color cardColor;
-    final Color borderCol;
-    final Color iconBgColor;
-    final Color titleColor;
-    final Color subtitleColor;
-    final String subtitleText;
+    final Color sessionSubtitleColor;
+    final String sessionSubtitleText;
 
-    if (hasSelection) {
-      cardColor = Colors.pink.withOpacity(0.05);
-      borderCol = Colors.pink.withOpacity(0.1);
-      iconBgColor = Colors.pink;
-      titleColor = Colors.grey[700]!;
-      subtitleColor = Colors.black;
-      subtitleText = '$dateStr | $timeStr ($durationText)';
-    } else if (showError) {
-      cardColor = Colors.amber.withOpacity(0.05);
-      borderCol = Colors.amber.withOpacity(0.2);
-      iconBgColor = Colors.amber;
-      titleColor = Colors.amber[900]!;
-      subtitleColor = Colors.amber[900]!;
-      subtitleText = 'Mandatory field - tap to select';
+    if (hasSession) {
+      sessionSubtitleColor = Colors.black;
+      sessionSubtitleText = '$dateStr | $timeStr ($durationText)';
+    } else if (showSessionTimeError) {
+      sessionSubtitleColor = Colors.amber[900]!;
+      sessionSubtitleText = 'Mandatory field - tap to select';
     } else {
-      cardColor = Colors.pink.withOpacity(0.05);
-      borderCol = Colors.pink.withOpacity(0.1);
-      iconBgColor = Colors.pink;
-      titleColor = Colors.grey[700]!;
-      subtitleColor = Colors.grey[500]!;
-      subtitleText = 'Tap to select session time';
+      sessionSubtitleColor = Colors.grey[500]!;
+      sessionSubtitleText = 'Tap to select session time';
     }
 
     return Container(
       decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderCol),
-      ),
-      child: InkWell(
-        onTap: () {
-          onTap();
-          showDialog(
-            context: context,
-            builder: (context) => SessionTimePickerDialog(
-              initialStart: provider.sessionStart,
-              initialEnd: provider.sessionEnd,
-              onSave: (s, e) => provider.setSessionRange(s, e),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: iconBgColor,
-                child: Icon(hasSelection ? Icons.access_time_filled : Icons.access_time, color: Colors.white),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      hasSelection ? 'Session Duration' : 'Select Session Time',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: titleColor,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitleText,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: subtitleColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right, color: showError && !hasSelection ? Colors.amber[900] : Colors.grey),
-            ],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        ),
+        ],
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        children: [
+          // Customer Selector Row
+          InkWell(
+            onTap: () => showDialog(
+                context: context,
+                builder: (context) => const CustomerSearchDialog()),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Colors.pink.withOpacity(0.1),
+                    foregroundColor: Colors.pink,
+                    child: Icon(
+                        customer == null ? Icons.person_outline : Icons.person),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Customer Details',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          customer?.name ?? 'Tap to select customer',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: customer == null
+                                ? Colors.grey[500]
+                                : Colors.black,
+                          ),
+                        ),
+                        if (customer != null)
+                          Text(customer.phone,
+                              style: TextStyle(
+                                  color: Colors.grey[600], fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                  if (customer == null)
+                    TextButton(
+                      onPressed: () => showDialog(
+                          context: context,
+                          builder: (context) => const AddCustomerDialog()),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                      ),
+                      child: const Text('ADD NEW',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  if (customer != null)
+                    Icon(Icons.chevron_right, color: Colors.grey[400]),
+                ],
+              ),
+            ),
+          ),
+          Divider(height: 1, color: Colors.grey[100]),
+          // Session Time Selector Row
+          InkWell(
+            onTap: () {
+              onSessionTimeTap();
+              showDialog(
+                context: context,
+                builder: (context) => SessionTimePickerDialog(
+                  initialStart: provider.sessionStart,
+                  initialEnd: provider.sessionEnd,
+                  onSave: (s, e) => provider.setSessionRange(s, e),
+                ),
+              );
+            },
+            borderRadius:
+                const BorderRadius.vertical(bottom: Radius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: showSessionTimeError && !hasSession
+                        ? Colors.amber.withOpacity(0.1)
+                        : Colors.pink.withOpacity(0.1),
+                    foregroundColor: showSessionTimeError && !hasSession
+                        ? Colors.amber
+                        : Colors.pink,
+                    child: Icon(hasSession
+                        ? Icons.access_time_filled
+                        : Icons.access_time),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Session Time',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: showSessionTimeError && !hasSession
+                                ? Colors.amber[900]
+                                : Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          sessionSubtitleText,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: sessionSubtitleColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right,
+                      color: showSessionTimeError && !hasSession
+                          ? Colors.amber[900]
+                          : Colors.grey[400]),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

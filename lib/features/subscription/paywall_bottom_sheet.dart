@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/providers/subscription_provider.dart';
+import 'widgets/restore_warning_dialog.dart';
 
 class PaywallBottomSheet extends StatefulWidget {
   final String titleExplanation;
@@ -276,6 +277,10 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                       onPressed: subProvider.isLoading
                           ? null
                           : () async {
+                              if (!subProvider.isPremium && mounted) {
+                                final confirm = await RestoreWarningDialog.show(context);
+                                if (!confirm) return;
+                              }
                               final success =
                                   await subProvider.restorePurchases();
                               if (success && mounted) {

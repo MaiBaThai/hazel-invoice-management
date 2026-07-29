@@ -505,9 +505,15 @@ class _BookingCustomerSearchDialogState
               onChanged: _onSearchChanged,
             ),
             const SizedBox(height: 16),
-            Expanded(
+            Flexible(
               child: _results.isEmpty
-                  ? const Center(child: Text('No customers found.'))
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24.0),
+                      child: Center(
+                        heightFactor: 1.0,
+                        child: Text('No customers found.'),
+                      ),
+                    )
                   : ListView.builder(
                       shrinkWrap: true,
                       itemCount: _results.length,

@@ -58,7 +58,7 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
                 ],
               )
             else
-              Expanded(
+              Flexible(
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: provider.searchResults.length,

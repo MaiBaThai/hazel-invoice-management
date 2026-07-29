@@ -791,11 +791,18 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleLogout(BuildContext context, AuthProvider auth) async {
+    final subProvider = context.read<SubscriptionProvider>();
+    final isPremium = subProvider.isPremium;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        content: Text(
+          isPremium
+              ? 'Are you sure you want to logout?\n\nNote: Your Premium access is currently linked to this account. Logging out will return you to the free version on this device.'
+              : 'Are you sure you want to logout?',
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('LOGOUT', style: TextStyle(color: Colors.red))),
