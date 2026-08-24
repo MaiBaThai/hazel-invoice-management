@@ -79,7 +79,7 @@ class CustomBottomNavBar extends StatelessWidget implements PreferredSizeWidget 
                   offset: const Offset(0, 4),
                 ),
                 BoxShadow(
-                  color: Colors.pink.withOpacity(0.02),
+                  color: selectedItemColor.withOpacity(0.02),
                   blurRadius: 8,
                   offset: const Offset(0, -2),
                 ),

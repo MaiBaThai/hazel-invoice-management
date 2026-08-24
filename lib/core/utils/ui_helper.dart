@@ -67,14 +67,14 @@ Future<ImageSource?> showImageSourceSheet(BuildContext context) {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: Colors.pink),
+              leading: Icon(Icons.camera_alt, color: Theme.of(context).colorScheme.primary),
               title: const Text('Take Photo'),
               onTap: () {
                 Navigator.pop(context, ImageSource.camera);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Colors.pink),
+              leading: Icon(Icons.photo_library, color: Theme.of(context).colorScheme.primary),
               title: const Text('Choose from Library'),
               onTap: () {
                 Navigator.pop(context, ImageSource.gallery);

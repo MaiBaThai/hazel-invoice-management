@@ -22,6 +22,7 @@ import 'package:nms/data/services/database_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/services.dart' show appFlavor;
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:nms/core/utils/theme_presets.dart';
 
 final GlobalKey<MainNavigationPageState> mainNavKey =
     GlobalKey<MainNavigationPageState>();
@@ -122,12 +123,12 @@ class NMSApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settingsProvider = context.watch<SettingsProvider>();
+    final themePresetId = settingsProvider.settings?.themePreset ?? 'rose';
+
     return MaterialApp(
       title: 'NMS v1.4.1',
-      theme: ThemeData(
-        primarySwatch: Colors.pink,
-        useMaterial3: true,
-      ),
+      theme: getThemeData(themePresetId),
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
       ],
@@ -204,6 +205,7 @@ class MainNavigationPageState extends State<MainNavigationPage> {
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
         items: [
           CustomBottomNavBarItem(
             icon: Icons.receipt_long,

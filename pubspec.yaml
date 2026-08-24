@@ -1,7 +1,7 @@
 name: nms
 description: Nail Management System - A zero-cost management tool for nail salons.
 publish_to: 'none'
-version: 1.0.1+41
+version: 1.0.2+50
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

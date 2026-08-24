@@ -212,7 +212,7 @@ class _SessionTimePickerDialogState extends State<SessionTimePickerDialog> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.chevron_left, color: Colors.pink),
+                            icon: Icon(Icons.chevron_left, color: Theme.of(context).colorScheme.primary),
                             onPressed: () {
                               setState(() {
                                 _selectedDate = _selectedDate.subtract(const Duration(days: 1));
@@ -239,17 +239,17 @@ class _SessionTimePickerDialogState extends State<SessionTimePickerDialog> {
                                 child: Text(
                                   _getFormattedDate(_selectedDate),
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
-                                    color: Colors.pink,
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                               ),
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.chevron_right, color: Colors.pink),
+                            icon: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.primary),
                             onPressed: () {
                               setState(() {
                                 _selectedDate = _selectedDate.add(const Duration(days: 1));
@@ -294,13 +294,13 @@ class _SessionTimePickerDialogState extends State<SessionTimePickerDialog> {
                         Border? border;
 
                         if (isSelected) {
-                          bgColor = Colors.pink;
+                          bgColor = Theme.of(context).colorScheme.primary;
                           textColor = Colors.white;
-                          border = Border.all(color: Colors.pink);
+                          border = Border.all(color: Theme.of(context).colorScheme.primary);
                         } else if (isInRange) {
-                          bgColor = Colors.pink.withOpacity(0.1);
-                          textColor = Colors.pink;
-                          border = Border.all(color: Colors.pink.withOpacity(0.2));
+                          bgColor = Theme.of(context).colorScheme.primary.withOpacity(0.1);
+                          textColor = Theme.of(context).colorScheme.primary;
+                          border = Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2));
                         } else {
                           bgColor = Colors.white;
                           textColor = Colors.black87;
@@ -412,9 +412,9 @@ class _SessionTimePickerDialogState extends State<SessionTimePickerDialog> {
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.pink,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
                             foregroundColor: Colors.white,
-                            disabledBackgroundColor: Colors.pink.withOpacity(0.3),
+                            disabledBackgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),

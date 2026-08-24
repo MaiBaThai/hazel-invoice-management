@@ -94,7 +94,7 @@ class InvoiceDetailView extends StatelessWidget {
                   ),
                   Text(
                     formatCurrency(invoice.finalTotal),
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pink, fontSize: 28),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 28),
                   ),
                 ],
               ),

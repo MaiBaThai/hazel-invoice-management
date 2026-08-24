@@ -273,6 +273,42 @@ class DatabaseService {
     return await snapshot.ref.getDownloadURL();
   }
 
+  Future<String> uploadLogo(Uint8List bytes, {String? oldLogoUrl}) async {
+    await _ensureUserSynced();
+    
+    if (oldLogoUrl != null && oldLogoUrl.isNotEmpty) {
+      try {
+        await deleteLogo(oldLogoUrl);
+      } catch (e) {
+        debugPrint('Warning: Could not delete old logo: $e');
+      }
+    }
+
+    final fileName = 'salon_logo_${DateTime.now().millisecondsSinceEpoch}.png';
+    final ref = storageRoot.child('configs/$fileName');
+    
+    final metadata = SettableMetadata(
+      contentType: 'image/png',
+      customMetadata: {
+        if (userId != null) 'user_id': userId!,
+      },
+    );
+
+    final uploadTask = ref.putData(bytes, metadata);
+    final snapshot = await uploadTask;
+    return await snapshot.ref.getDownloadURL();
+  }
+
+  Future<void> deleteLogo(String logoUrl) async {
+    await _ensureUserSynced();
+    try {
+      final ref = _storage.refFromURL(logoUrl);
+      await ref.delete();
+    } catch (e) {
+      debugPrint('Error deleting logo from storage: $e');
+    }
+  }
+
   Future<void> deleteInvoicePhoto(String invoiceId, String photoUrl) async {
     await _ensureUserSynced();
     try {

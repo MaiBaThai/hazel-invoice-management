@@ -124,7 +124,10 @@ class _BookingDialogState extends State<BookingDialog> {
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.pink),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+              ),
               child: const Text('SAVE ANYWAY'),
             ),
           ],
@@ -178,7 +181,10 @@ class _BookingDialogState extends State<BookingDialog> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('DELETE'),
           ),
         ],
@@ -191,7 +197,6 @@ class _BookingDialogState extends State<BookingDialog> {
       try {
         await bookingProvider.deleteBooking(widget.booking!);
         if (mounted) {
-          Navigator.pop(context); // Close Delete dialog
           Navigator.pop(context); // Close BookingDialog
         }
       } catch (e) {
@@ -251,8 +256,8 @@ class _BookingDialogState extends State<BookingDialog> {
                   ),
                   child: _selectedCustomer != null
                       ? ListTile(
-                          leading: const CircleAvatar(
-                            backgroundColor: Colors.pink,
+                          leading: CircleAvatar(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
                             child: Icon(Icons.person, color: Colors.white),
                           ),
                           title: Text(_selectedCustomer!.name),
@@ -264,11 +269,11 @@ class _BookingDialogState extends State<BookingDialog> {
                         )
                       : TextButton.icon(
                           onPressed: _showCustomerSearch,
-                          icon: const Icon(Icons.person_add_alt_1,
-                              color: Colors.pink),
-                          label: const Text(
+                          icon: Icon(Icons.person_add_alt_1,
+                              color: Theme.of(context).colorScheme.primary),
+                          label: Text(
                             'Select Client',
-                            style: TextStyle(color: Colors.pink),
+                            style: TextStyle(color: Theme.of(context).colorScheme.primary),
                           ),
                         ),
                 ),
@@ -322,7 +327,7 @@ class _BookingDialogState extends State<BookingDialog> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.access_time, color: Colors.pink),
+                        Icon(Icons.access_time, color: Theme.of(context).colorScheme.primary),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -360,7 +365,7 @@ class _BookingDialogState extends State<BookingDialog> {
         ElevatedButton(
           onPressed: _saveBooking,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.pink,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -472,7 +477,10 @@ class _BookingCustomerSearchDialogState
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.pink),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('SAVE'),
           ),
         ],
@@ -533,9 +541,9 @@ class _BookingCustomerSearchDialogState
             const Divider(),
             TextButton.icon(
               onPressed: _createNewClient,
-              icon: const Icon(Icons.person_add, color: Colors.pink),
-              label: const Text('Add New Customer',
-                  style: TextStyle(color: Colors.pink)),
+              icon: Icon(Icons.person_add, color: Theme.of(context).colorScheme.primary),
+              label: Text('Add New Customer',
+                  style: TextStyle(color: Theme.of(context).colorScheme.primary)),
             ),
           ],
         ),

@@ -147,7 +147,7 @@ class _CustomerHistoryDialogState extends State<CustomerHistoryDialog> {
                 Navigator.pop(context);
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.pink, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white),
             child: const Text('SAVE'),
           ),
         ],
@@ -226,7 +226,7 @@ class _InvoiceTile extends StatelessWidget {
               ],
               Text(
                 formatCurrency(invoice.finalTotal),
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pink, fontSize: 16),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 16),
               ),
             ],
           ),

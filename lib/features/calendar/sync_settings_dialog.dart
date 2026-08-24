@@ -123,11 +123,52 @@ class _SyncSettingsDialogState extends State<SyncSettingsDialog> {
                   ),
                 ] else if (bookingProvider.appleSyncEnabled) ...[
                   const SizedBox(height: 8),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'No writeable local calendars found. Ensure you granted local calendar access.',
-                      style: TextStyle(fontSize: 12, color: Colors.orange),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'No writeable local calendars found. Ensure you granted local calendar access.',
+                          style: TextStyle(fontSize: 12, color: Colors.orange),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () async {
+                            setState(() => _isLoading = true);
+                            try {
+                              final granted = await bookingProvider.requestApplePermission();
+                              if (granted) {
+                                await bookingProvider.loadDeviceCalendars();
+                              } else {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Calendar permission denied. Enable it in system settings.'),
+                                    ),
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Error requesting permission: $e')),
+                                );
+                              }
+                            } finally {
+                              if (mounted) setState(() => _isLoading = false);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.pink,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('GRANT ACCESS'),
+                        ),
+                      ],
                     ),
                   ),
                 ],

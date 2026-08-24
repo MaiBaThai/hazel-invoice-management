@@ -62,9 +62,9 @@ class DailyDetailsDialog extends StatelessWidget {
                 ),
               ),
               TabBar(
-                labelColor: Colors.pink,
+                labelColor: Theme.of(context).colorScheme.primary,
                 unselectedLabelColor: Colors.grey,
-                indicatorColor: Colors.pink,
+                indicatorColor: Theme.of(context).colorScheme.primary,
                 tabs: [
                   Tab(text: 'Invoices (${invoices.length})'),
                   Tab(text: 'Expenses (${expenses.length})'),
@@ -144,7 +144,7 @@ class DailyDetailsDialog extends StatelessWidget {
                     ],
                   ),
                 ),
-                Text(formatCurrency(invoice.finalTotal), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pink)),
+                Text(formatCurrency(invoice.finalTotal), style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
               ],
             ),
           ),

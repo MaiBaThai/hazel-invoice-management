@@ -130,9 +130,9 @@ class _CustomersPageState extends State<CustomersPage> {
                         children: [
                           Text(
                             formatCurrency(customer.totalSpent),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.pink,
+                              color: Theme.of(context).colorScheme.primary,
                               fontSize: 16,
                             ),
                           ),

@@ -1,4 +1,7 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as img;
 import '../../data/models/app_settings_model.dart';
 import '../../data/models/invoice_model.dart';
 import '../../data/services/database_service.dart';
@@ -67,6 +70,7 @@ class SettingsProvider extends ChangeNotifier {
       businessConfig: config,
       bankConfig: _settings!.bankConfig,
       predefinedServices: _settings!.predefinedServices,
+      themePreset: _settings!.themePreset,
     );
     notifyListeners();
     
@@ -80,6 +84,7 @@ class SettingsProvider extends ChangeNotifier {
       businessConfig: _settings!.businessConfig,
       bankConfig: config,
       predefinedServices: _settings!.predefinedServices,
+      themePreset: _settings!.themePreset,
     );
     notifyListeners();
     
@@ -94,6 +99,7 @@ class SettingsProvider extends ChangeNotifier {
       businessConfig: _settings!.businessConfig,
       bankConfig: _settings!.bankConfig,
       predefinedServices: updatedServices,
+      themePreset: _settings!.themePreset,
     );
     notifyListeners();
     
@@ -110,6 +116,7 @@ class SettingsProvider extends ChangeNotifier {
         businessConfig: _settings!.businessConfig,
         bankConfig: _settings!.bankConfig,
         predefinedServices: updatedServices,
+        themePreset: _settings!.themePreset,
       );
       notifyListeners();
       
@@ -127,10 +134,71 @@ class SettingsProvider extends ChangeNotifier {
         businessConfig: _settings!.businessConfig,
         bankConfig: _settings!.bankConfig,
         predefinedServices: updatedServices,
+        themePreset: _settings!.themePreset,
       );
       notifyListeners();
       
       await _dbService.updateSettings(_settings!);
     }
+  }
+
+  Future<void> updateThemePreset(String presetId) async {
+    if (_settings == null) return;
+    
+    _settings = AppSettings(
+      businessConfig: _settings!.businessConfig,
+      bankConfig: _settings!.bankConfig,
+      predefinedServices: _settings!.predefinedServices,
+      themePreset: presetId,
+    );
+    notifyListeners();
+    
+    await _dbService.updateSettings(_settings!);
+  }
+
+  Future<void> uploadSalonLogo(XFile file) async {
+    if (_settings == null) return;
+    
+    final bytes = await file.readAsBytes();
+    
+    final img.Image? decoded = img.decodeImage(bytes);
+    if (decoded == null) throw Exception('Could not decode image');
+
+    img.Image resized;
+    if (decoded.width > decoded.height) {
+      resized = img.copyResize(decoded, width: 400);
+    } else {
+      resized = img.copyResize(decoded, height: 400);
+    }
+    
+    final compressedBytes = Uint8List.fromList(img.encodePng(resized));
+
+    final oldLogoUrl = _settings!.businessConfig.logoUrl;
+    final newLogoUrl = await _dbService.uploadLogo(compressedBytes, oldLogoUrl: oldLogoUrl);
+    
+    final updatedBusinessConfig = BusinessConfig(
+      businessName: _settings!.businessConfig.businessName,
+      currencySymbol: _settings!.businessConfig.currencySymbol,
+      logoUrl: newLogoUrl,
+    );
+    
+    await updateBusinessConfig(updatedBusinessConfig);
+  }
+
+  Future<void> deleteSalonLogo() async {
+    if (_settings == null) return;
+    
+    final logoUrl = _settings!.businessConfig.logoUrl;
+    if (logoUrl.isEmpty) return;
+    
+    await _dbService.deleteLogo(logoUrl);
+    
+    final updatedBusinessConfig = BusinessConfig(
+      businessName: _settings!.businessConfig.businessName,
+      currencySymbol: _settings!.businessConfig.currencySymbol,
+      logoUrl: '',
+    );
+    
+    await updateBusinessConfig(updatedBusinessConfig);
   }
 }

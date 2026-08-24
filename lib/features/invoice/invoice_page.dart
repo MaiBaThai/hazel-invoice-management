@@ -147,9 +147,9 @@ class _InvoicePageState extends State<InvoicePage> {
                       margin: const EdgeInsets.only(bottom: 20),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.pink.withOpacity(0.05),
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.pink.withOpacity(0.1)),
+                        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.1)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,7 +162,7 @@ class _InvoicePageState extends State<InvoicePage> {
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.pink[700],
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                               Text(
@@ -170,7 +170,7 @@ class _InvoicePageState extends State<InvoicePage> {
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.pink[700],
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                             ],
@@ -180,9 +180,9 @@ class _InvoicePageState extends State<InvoicePage> {
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: percent,
-                              backgroundColor: Colors.pink.withOpacity(0.1),
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                  Colors.pink),
+                              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  Theme.of(context).colorScheme.primary),
                               minHeight: 6,
                             ),
                           ),
@@ -236,7 +236,7 @@ class _InvoicePageState extends State<InvoicePage> {
                         return ActionChip(
                           label: Text(
                               '${s.serviceName} (${formatCurrency(s.price)})'),
-                          backgroundColor: Colors.pink.withOpacity(0.05),
+                          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.05),
                           side: BorderSide.none,
                           onPressed: () {
                             final emptyIndex = provider.services.indexWhere(
@@ -306,7 +306,7 @@ class _InvoicePageState extends State<InvoicePage> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Colors.pink),
+                              borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 8),
@@ -338,7 +338,7 @@ class _InvoicePageState extends State<InvoicePage> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Colors.pink),
+                              borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 8),
@@ -414,8 +414,8 @@ class _InvoicePageState extends State<InvoicePage> {
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Text(
                                   '-${formatCurrency(provider.subtotal * provider.discountPercent / 100)}',
-                                  style: const TextStyle(
-                                      color: Colors.pink,
+                                  style: TextStyle(
+                                      color: Theme.of(context).colorScheme.primary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14),
                                 ),
@@ -429,32 +429,32 @@ class _InvoicePageState extends State<InvoicePage> {
                                 decoration: InputDecoration(
                                   isDense: true,
                                   filled: true,
-                                  fillColor: Colors.pink.withOpacity(0.03),
+                                  fillColor: Theme.of(context).colorScheme.primary.withOpacity(0.03),
                                   contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 8, vertical: 8),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide(
-                                        color: Colors.pink.withOpacity(0.2)),
+                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide(
-                                        color: Colors.pink.withOpacity(0.2)),
+                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide:
-                                        const BorderSide(color: Colors.pink),
+                                        BorderSide(color: Theme.of(context).colorScheme.primary),
                                   ),
                                   hintText: '0',
                                 ),
                                 keyboardType: TextInputType.number,
                                 onChanged: (val) => provider
                                     .setDiscount(double.tryParse(val) ?? 0),
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.pink,
+                                    color: Theme.of(context).colorScheme.primary,
                                     fontSize: 14),
                               ),
                             ),
@@ -471,10 +471,10 @@ class _InvoicePageState extends State<InvoicePage> {
                                 fontWeight: FontWeight.bold, fontSize: 16)),
                         Text(
                           formatCurrency(provider.finalTotal),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 22,
-                              color: Colors.pink),
+                              color: Theme.of(context).colorScheme.primary),
                         ),
                       ],
                     ),
@@ -519,7 +519,7 @@ class _InvoicePageState extends State<InvoicePage> {
                         builder: (context) => const InvoiceSummaryDialog());
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.pink,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
@@ -611,8 +611,8 @@ class _InvoiceInfoCard extends StatelessWidget {
               child: Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: Colors.pink.withOpacity(0.1),
-                    foregroundColor: Colors.pink,
+                    backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    foregroundColor: Theme.of(context).colorScheme.primary,
                     child: Icon(
                         customer == null ? Icons.person_outline : Icons.person),
                   ),
@@ -689,10 +689,10 @@ class _InvoiceInfoCard extends StatelessWidget {
                   CircleAvatar(
                     backgroundColor: showSessionTimeError && !hasSession
                         ? Colors.amber.withOpacity(0.1)
-                        : Colors.pink.withOpacity(0.1),
+                        : Theme.of(context).colorScheme.primary.withOpacity(0.1),
                     foregroundColor: showSessionTimeError && !hasSession
                         ? Colors.amber
-                        : Colors.pink,
+                        : Theme.of(context).colorScheme.primary,
                     child: Icon(hasSession
                         ? Icons.access_time_filled
                         : Icons.access_time),

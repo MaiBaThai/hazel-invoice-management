@@ -76,8 +76,8 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
                       : const Icon(Icons.lock_outline, color: Colors.grey),
                 ),
               ],
-              indicatorColor: Colors.pink,
-              labelColor: Colors.pink,
+              indicatorColor: Theme.of(context).colorScheme.primary,
+              labelColor: Theme.of(context).colorScheme.primary,
             ),
           ),
           body: TabBarView(
@@ -121,7 +121,7 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
             ),
             trailing: Text(
               formatCurrency(invoice.finalTotal),
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pink),
+              style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
             ),
             children: [
               Padding(
@@ -227,10 +227,10 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.pink.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.lock_outline, size: 48, color: Colors.pink),
+                child: Icon(Icons.lock_outline, size: 48, color: Theme.of(context).colorScheme.primary),
               ),
               const SizedBox(height: 24),
               const Text(
@@ -250,7 +250,7 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> with SingleTick
                   titleExplanation: "Upgrade to Premium to upload work photos and start building your client photo portfolios!",
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.pink,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   shape: RoundedRectangleBorder(

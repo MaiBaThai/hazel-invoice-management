@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/invoice_provider.dart';
 import '../../core/providers/customer_provider.dart';
@@ -8,12 +9,15 @@ import '../../core/providers/dashboard_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../subscription/subscription_settings_page.dart';
+import '../subscription/paywall_bottom_sheet.dart';
 import '../../data/models/app_settings_model.dart';
 import '../../data/models/invoice_model.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../core/utils/web_helper.dart' as web_helper;
+import '../../core/utils/ui_helper.dart';
+import '../../core/utils/theme_presets.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -36,6 +40,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<SettingsProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
+    final subProvider = context.watch<SubscriptionProvider>();
 
     if (provider.isLoading || provider.settings == null) {
       return const Scaffold(
@@ -56,7 +61,10 @@ class _SettingsPageState extends State<SettingsPage> {
           _buildSubscriptionSection(context),
 
           const SizedBox(height: 32),
-          _buildBusinessConfigSection(context, provider),
+          _buildAppearanceSection(context, provider),
+
+          const SizedBox(height: 32),
+          _buildBusinessConfigSection(context, provider, subProvider),
           if (provider.settings!.businessConfig.enableVietQR) ...[
             const SizedBox(height: 32),
             _buildBankConfigSection(context, provider),
@@ -146,14 +154,17 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildBusinessConfigSection(BuildContext context, SettingsProvider provider) {
+  Widget _buildBusinessConfigSection(
+      BuildContext context, SettingsProvider provider, SubscriptionProvider subProvider) {
     final businessConfig = provider.settings!.businessConfig;
+    final isPremium = subProvider.isPremium;
+    final theme = Theme.of(context);
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.pink.withOpacity(0.2)),
+        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -165,12 +176,98 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 const Text('Business Profile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.pink),
+                  icon: Icon(Icons.edit, color: theme.colorScheme.primary),
                   onPressed: () => _showEditBusinessDialog(context, provider, businessConfig),
                 ),
               ],
             ),
             const Divider(),
+            
+            // Logo Section
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Row(
+                children: [
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: theme.colorScheme.primary.withOpacity(0.3),
+                            style: businessConfig.logoUrl.isEmpty ? BorderStyle.none : BorderStyle.solid,
+                            width: 2,
+                          ),
+                          color: theme.colorScheme.primary.withOpacity(0.05),
+                        ),
+                        child: ClipOval(
+                          child: businessConfig.logoUrl.isNotEmpty
+                              ? Image.network(
+                                  businessConfig.logoUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 24, color: Colors.grey),
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)));
+                                  },
+                                )
+                              : Icon(Icons.storefront, size: 28, color: theme.colorScheme.primary.withOpacity(0.4)),
+                        ),
+                      ),
+                      if (!isPremium)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(color: Colors.amber, shape: BoxShape.circle),
+                            child: const Icon(Icons.lock, size: 10, color: Colors.white),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Salon Logo', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text(
+                          isPremium 
+                              ? (businessConfig.logoUrl.isNotEmpty ? 'Custom logo displayed on invoices' : 'No logo uploaded yet')
+                              : 'Custom logo on invoices (Premium only)',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (businessConfig.logoUrl.isEmpty) ...[
+                    IconButton(
+                      icon: Icon(Icons.add_a_photo_outlined, color: theme.colorScheme.primary),
+                      tooltip: 'Upload Logo',
+                      onPressed: () => _handleLogoAction(context, provider, subProvider, isUpload: true),
+                    ),
+                  ] else ...[
+                    IconButton(
+                      icon: Icon(Icons.edit_outlined, color: theme.colorScheme.primary),
+                      tooltip: 'Change Logo',
+                      onPressed: () => _handleLogoAction(context, provider, subProvider, isUpload: true),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      tooltip: 'Remove Logo',
+                      onPressed: () => _handleLogoAction(context, provider, subProvider, isUpload: false),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Divider(),
+            
             _buildInfoRow('Business Name', businessConfig.businessName),
             _buildInfoRow('Currency', businessConfig.currencySymbol == 'k' ? 'k (1,000 VNĐ)' : '\$ (USD)'),
           ],
@@ -179,14 +276,215 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildBankConfigSection(BuildContext context, SettingsProvider provider) {
-    final bankConfig = provider.settings!.bankConfig;
+  Future<void> _handleLogoAction(
+      BuildContext context, SettingsProvider provider, SubscriptionProvider subProvider,
+      {required bool isUpload}) async {
+    final isPremium = subProvider.isPremium;
+    if (!isPremium) {
+      if (context.mounted) {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => const PaywallBottomSheet(
+            titleExplanation: 'Personalize invoices with your custom logo',
+          ),
+        );
+      }
+      return;
+    }
+
+    if (isUpload) {
+      final source = await showImageSourceSheet(context);
+      if (source == null) return;
+
+      final picker = ImagePicker();
+      final file = await picker.pickImage(source: source);
+      if (file == null) return;
+
+      if (!context.mounted) return;
+      
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Uploading and compressing logo...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      try {
+        await provider.uploadSalonLogo(file);
+        if (context.mounted) {
+          Navigator.pop(context); // Dismiss loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Logo uploaded successfully!')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          Navigator.pop(context); // Dismiss loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to upload logo: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } else {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Remove Logo'),
+          content: const Text('Are you sure you want to remove your salon logo?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true), 
+              child: const Text('REMOVE', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm == true) {
+        if (!context.mounted) return;
+        
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: Card(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ),
+        );
+
+        try {
+          await provider.deleteSalonLogo();
+          if (context.mounted) {
+            Navigator.pop(context); // Dismiss loading
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Logo removed successfully!')),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            Navigator.pop(context); // Dismiss loading
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to remove logo: $e'), backgroundColor: Colors.red),
+            );
+          }
+        }
+      }
+    }
+  }
+
+  Widget _buildAppearanceSection(BuildContext context, SettingsProvider provider) {
+    final activeThemePreset = provider.settings?.themePreset ?? 'rose';
+    final theme = Theme.of(context);
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.pink.withOpacity(0.2)),
+        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text('Appearance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text('Customize the primary color of your application', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            ),
+            const Divider(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: themePresets.map((preset) {
+                final isSelected = preset.id == activeThemePreset;
+
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      if (!isSelected) {
+                        await provider.updateThemePreset(preset.id);
+                      }
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: preset.seedColor,
+                            shape: BoxShape.circle,
+                            border: isSelected
+                                ? Border.all(color: theme.colorScheme.onSurface, width: 2)
+                                : Border.all(color: Colors.transparent),
+                            boxShadow: [
+                              BoxShadow(
+                                color: preset.seedColor.withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: isSelected
+                              ? const Icon(Icons.check, color: Colors.white, size: 16)
+                              : null,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          preset.name,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBankConfigSection(BuildContext context, SettingsProvider provider) {
+    final bankConfig = provider.settings!.bankConfig;
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -198,7 +496,7 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 const Text('VietQR Bank Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.pink),
+                  icon: Icon(Icons.edit, color: theme.colorScheme.primary),
                   onPressed: () => _showEditBankDialog(context, provider, bankConfig),
                 ),
               ],
@@ -234,12 +532,13 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildServiceMenuSection(BuildContext context, SettingsProvider provider) {
     final services = provider.settings!.predefinedServices;
     final businessConfig = provider.settings?.businessConfig ?? BusinessConfig(businessName: 'My Salon', currencySymbol: '\$');
+    final theme = Theme.of(context);
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.pink.withOpacity(0.2)),
+        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -251,7 +550,7 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 const Text('Service Menu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 IconButton(
-                  icon: const Icon(Icons.add_circle, color: Colors.pink),
+                  icon: Icon(Icons.add_circle, color: theme.colorScheme.primary),
                   onPressed: () => _showEditServiceDialog(context, provider, null, -1),
                 ),
               ],
@@ -278,7 +577,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       children: [
                         Text(
                           businessConfig.isPrefix ? '${businessConfig.currencySymbol}${service.price}' : '${service.price}${businessConfig.currencySymbol}', 
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pink)
+                          style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)
                         ),
                         IconButton(
                           icon: const Icon(Icons.edit, size: 20, color: Colors.grey),
@@ -377,7 +676,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   saveChanges();
                 }
               },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.pink, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white),
               child: const Text('SAVE'),
             ),
           ],
@@ -414,7 +713,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ));
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.pink, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white),
             child: const Text('SAVE'),
           ),
         ],
@@ -451,7 +750,7 @@ class _SettingsPageState extends State<SettingsPage> {
               }
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.pink, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white),
             child: const Text('SAVE'),
           ),
         ],
@@ -461,12 +760,13 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _buildAccountSection(BuildContext context, AuthProvider auth) {
     final isAnonymous = auth.isAnonymous;
+    final theme = Theme.of(context);
     return Card(
       elevation: 0,
-      color: Colors.pink.withOpacity(0.05),
+      color: theme.colorScheme.primary.withOpacity(0.05),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.pink.withOpacity(0.2)),
+        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
       ),
       child: Padding(
         padding: isAnonymous
@@ -478,9 +778,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Row(
                     children: [
-                      const CircleAvatar(
-                        backgroundColor: Colors.pink,
-                        child: Icon(Icons.person, color: Colors.white),
+                      CircleAvatar(
+                        backgroundColor: theme.colorScheme.primary,
+                        child: const Icon(Icons.person, color: Colors.white),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -498,7 +798,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             const SizedBox(height: 4),
                             SelectableText(
                               'UID: ${auth.isInitializing ? "Loading..." : (auth.user?.uid ?? "Unknown")}',
-                              style: TextStyle(color: Colors.pink[300], fontSize: 10, fontFamily: 'monospace'),
+                              style: TextStyle(color: theme.colorScheme.primary.withOpacity(0.6), fontSize: 10, fontFamily: 'monospace'),
                             ),
                           ],
                         ),
@@ -510,12 +810,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 8),
 
                   // 1. SIGN-UP (Link Current Data)
-                  const Text(
+                  Text(
                     'CREATE ACCOUNT (Sign Up & Sync)',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Colors.pink,
+                      color: theme.colorScheme.primary,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -549,7 +849,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       icon: const Icon(Icons.link),
                       label: const Text('SIGN UP WITH GOOGLE'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.pink,
+                        backgroundColor: theme.colorScheme.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
@@ -652,9 +952,9 @@ class _SettingsPageState extends State<SettingsPage> {
               )
             : Row(
                 children: [
-                  const CircleAvatar(
-                    backgroundColor: Colors.pink,
-                    child: Icon(Icons.person, color: Colors.white),
+                  CircleAvatar(
+                    backgroundColor: theme.colorScheme.primary,
+                    child: const Icon(Icons.person, color: Colors.white),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -728,13 +1028,14 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildSubscriptionSection(BuildContext context) {
     final subProvider = context.watch<SubscriptionProvider>();
     final isPremium = subProvider.isPremium;
+    final theme = Theme.of(context);
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(
-          color: Color(0xFFFF4081),
+        side: BorderSide(
+          color: theme.colorScheme.primary,
           width: 1.5,
         ),
       ),
@@ -753,12 +1054,12 @@ class _SettingsPageState extends State<SettingsPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF4081).withOpacity(0.1),
+                  color: theme.colorScheme.primary.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.auto_awesome,
-                  color: Color(0xFFFF4081),
+                  color: theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(width: 16),
@@ -766,12 +1067,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Subscription Plan',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFFF4081),
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 4),

@@ -13,9 +13,9 @@ import '../../data/services/database_service.dart';
 
 class GoogleAuthClient extends http.BaseClient {
   final Map<String, String> _headers;
-  final http.Client _client = http.Client();
+  final http.Client _client;
 
-  GoogleAuthClient(this._headers);
+  GoogleAuthClient(this._headers, {http.Client? client}) : _client = client ?? http.Client();
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
@@ -37,8 +37,14 @@ class BookingProvider extends ChangeNotifier {
   bool _appleSyncEnabled = false;
   String? _appleCalendarId;
   List<Calendar> _deviceCalendars = [];
+  bool _isSyncing = false;
+  bool _settingsLoaded = false;
+  bool _hasSyncedThisSession = false;
 
-  final DeviceCalendarPlugin _deviceCalendarPlugin = DeviceCalendarPlugin();
+  final DeviceCalendarPlugin _deviceCalendarPlugin;
+
+  @visibleForTesting
+  http.Client? mockHttpClient;
 
   List<Booking> get bookings => _bookings;
   bool get isLoading => _isLoading;
@@ -46,9 +52,13 @@ class BookingProvider extends ChangeNotifier {
   bool get appleSyncEnabled => _appleSyncEnabled;
   String? get appleCalendarId => _appleCalendarId;
   List<Calendar> get deviceCalendars => _deviceCalendars;
+  bool get isSyncing => _isSyncing;
+  bool get settingsLoaded => _settingsLoaded;
+  bool get hasSyncedThisSession => _hasSyncedThisSession;
 
-  BookingProvider(this._dbService, {GoogleSignIn? googleSignIn})
-      : _googleSignIn = googleSignIn ?? GoogleSignIn.instance {
+  BookingProvider(this._dbService, {GoogleSignIn? googleSignIn, DeviceCalendarPlugin? deviceCalendarPlugin})
+      : _googleSignIn = googleSignIn ?? GoogleSignIn.instance,
+        _deviceCalendarPlugin = deviceCalendarPlugin ?? DeviceCalendarPlugin() {
     tz.initializeTimeZones();
     _startListeners();
   }
@@ -67,6 +77,8 @@ class BookingProvider extends ChangeNotifier {
 
     _bookings = [];
     _isLoading = true;
+    _settingsLoaded = false;
+    _hasSyncedThisSession = false;
     notifyListeners();
 
     if (_dbService.userId == null) {
@@ -102,6 +114,7 @@ class BookingProvider extends ChangeNotifier {
       if (_appleSyncEnabled) {
         await loadDeviceCalendars();
       }
+      _settingsLoaded = true;
       notifyListeners();
     });
   }
@@ -178,6 +191,189 @@ class BookingProvider extends ChangeNotifier {
     }
     await _saveSettings();
     return true;
+  }
+
+  // --- External Sync Methods (Two-way Sync) ---
+
+  Future<void> syncExternalCalendars() async {
+    if (_isSyncing) return;
+    _isSyncing = true;
+    _hasSyncedThisSession = true;
+    notifyListeners();
+
+    try {
+      final now = DateTime.now();
+      final timeMin = now.subtract(const Duration(days: 7));
+      final timeMax = now.add(const Duration(days: 30));
+
+      if (_googleSyncEnabled) {
+        await _syncFromGoogle(timeMin, timeMax);
+      }
+
+      if (_appleSyncEnabled && _appleCalendarId != null) {
+        await _syncFromApple(timeMin, timeMax);
+      }
+    } catch (e) {
+      debugPrint('Error syncing external calendars: $e');
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _syncFromGoogle(DateTime timeMin, DateTime timeMax) async {
+    try {
+      final client = _googleSignIn.authorizationClient;
+      const calendarScope = 'https://www.googleapis.com/auth/calendar.events';
+      final headers = await client.authorizationHeaders(
+        [calendarScope],
+        promptIfNecessary: false,
+      );
+      if (headers == null) return;
+
+      final httpClient = GoogleAuthClient(headers, client: mockHttpClient);
+      final calendarApi = cal.CalendarApi(httpClient);
+
+      final eventsList = await calendarApi.events.list(
+        'primary',
+        timeMin: timeMin.toUtc(),
+        timeMax: timeMax.toUtc(),
+        singleEvents: true,
+      );
+
+      final items = eventsList.items ?? [];
+      httpClient.close();
+
+      final Set<String> retrievedGoogleEventIds = {};
+
+      for (final event in items) {
+        final eventId = event.id;
+        if (eventId == null || event.status == 'cancelled') continue;
+        retrievedGoogleEventIds.add(eventId);
+
+        final localIdx = _bookings.indexWhere((b) => b.googleEventId == eventId);
+
+        final eventTitle = event.summary ?? 'Google Event';
+        final eventNotes = event.description ?? '';
+        final eventStart = event.start?.dateTime ?? event.start?.date ?? DateTime.now();
+        final eventEnd = event.end?.dateTime ?? event.end?.date ?? DateTime.now().add(const Duration(hours: 1));
+
+        if (localIdx != -1) {
+          final existing = _bookings[localIdx];
+          if (existing.title != eventTitle ||
+              existing.startTime.millisecondsSinceEpoch != eventStart.millisecondsSinceEpoch ||
+              existing.endTime.millisecondsSinceEpoch != eventEnd.millisecondsSinceEpoch ||
+              existing.notes != eventNotes) {
+            final updated = existing.copyWith(
+              title: eventTitle,
+              startTime: eventStart,
+              endTime: eventEnd,
+              notes: eventNotes,
+              updatedAt: DateTime.now(),
+            );
+            await _dbService.updateBooking(updated);
+          }
+        } else {
+          final newBooking = Booking(
+            id: '',
+            title: eventTitle,
+            startTime: eventStart,
+            endTime: eventEnd,
+            notes: eventNotes,
+            googleEventId: eventId,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+          await _dbService.addBooking(newBooking);
+        }
+      }
+
+      final bookingsToDelete = _bookings.where((b) {
+        if (b.googleEventId == null) return false;
+        if (b.startTime.isBefore(timeMin) || b.startTime.isAfter(timeMax)) return false;
+        return !retrievedGoogleEventIds.contains(b.googleEventId);
+      }).toList();
+
+      for (final booking in bookingsToDelete) {
+        await _dbService.deleteBooking(booking.id);
+      }
+    } catch (e) {
+      debugPrint('Google sync failed: $e');
+    }
+  }
+
+  Future<void> _syncFromApple(DateTime timeMin, DateTime timeMax) async {
+    try {
+      final hasPerm = await checkApplePermission();
+      if (!hasPerm) return;
+
+      final eventsResult = await _deviceCalendarPlugin.retrieveEvents(
+        _appleCalendarId!,
+        RetrieveEventsParams(
+          startDate: timeMin,
+          endDate: timeMax,
+        ),
+      );
+
+      if (!eventsResult.isSuccess || eventsResult.data == null) return;
+
+      final items = eventsResult.data!;
+      final Set<String> retrievedAppleEventIds = {};
+
+      for (final event in items) {
+        final eventId = event.eventId;
+        if (eventId == null) continue;
+        retrievedAppleEventIds.add(eventId);
+
+        final localIdx = _bookings.indexWhere((b) => b.appleEventId == eventId);
+
+        final eventTitle = event.title ?? 'Apple Event';
+        final eventNotes = event.description ?? '';
+        final eventStart = event.start?.toLocal() ?? DateTime.now();
+        final eventEnd = event.end?.toLocal() ?? DateTime.now().add(const Duration(hours: 1));
+
+        if (localIdx != -1) {
+          final existing = _bookings[localIdx];
+          if (existing.title != eventTitle ||
+              existing.startTime.millisecondsSinceEpoch != eventStart.millisecondsSinceEpoch ||
+              existing.endTime.millisecondsSinceEpoch != eventEnd.millisecondsSinceEpoch ||
+              existing.notes != eventNotes) {
+            final updated = existing.copyWith(
+              title: eventTitle,
+              startTime: eventStart,
+              endTime: eventEnd,
+              notes: eventNotes,
+              updatedAt: DateTime.now(),
+            );
+            await _dbService.updateBooking(updated);
+          }
+        } else {
+          final newBooking = Booking(
+            id: '',
+            title: eventTitle,
+            startTime: eventStart,
+            endTime: eventEnd,
+            notes: eventNotes,
+            appleEventId: eventId,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+          await _dbService.addBooking(newBooking);
+        }
+      }
+
+      final bookingsToDelete = _bookings.where((b) {
+        if (b.appleEventId == null) return false;
+        if (b.startTime.isBefore(timeMin) || b.startTime.isAfter(timeMax)) return false;
+        return !retrievedAppleEventIds.contains(b.appleEventId);
+      }).toList();
+
+      for (final booking in bookingsToDelete) {
+        await _dbService.deleteBooking(booking.id);
+      }
+    } catch (e) {
+      debugPrint('Apple sync failed: $e');
+    }
   }
 
   // --- Scheduling Conflict Detection ---
@@ -287,7 +483,7 @@ class BookingProvider extends ChangeNotifier {
       );
       if (headers == null) return null;
 
-      final httpClient = GoogleAuthClient(headers);
+      final httpClient = GoogleAuthClient(headers, client: mockHttpClient);
       final calendarApi = cal.CalendarApi(httpClient);
 
       final event = cal.Event(
@@ -316,7 +512,7 @@ class BookingProvider extends ChangeNotifier {
       );
       if (headers == null) return;
 
-      final httpClient = GoogleAuthClient(headers);
+      final httpClient = GoogleAuthClient(headers, client: mockHttpClient);
       final calendarApi = cal.CalendarApi(httpClient);
 
       final event = cal.Event(
@@ -343,7 +539,7 @@ class BookingProvider extends ChangeNotifier {
       );
       if (headers == null) return;
 
-      final httpClient = GoogleAuthClient(headers);
+      final httpClient = GoogleAuthClient(headers, client: mockHttpClient);
       final calendarApi = cal.CalendarApi(httpClient);
 
       await calendarApi.events.delete('primary', eventId);

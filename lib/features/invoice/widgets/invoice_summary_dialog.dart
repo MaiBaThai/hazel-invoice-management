@@ -26,6 +26,43 @@ class InvoiceSummaryDialog extends StatefulWidget {
 
 class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
   final GlobalKey _globalKey = GlobalKey();
+  bool _isLogoLoaded = false;
+  bool _hasLogoError = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _precacheLogo();
+  }
+
+  void _precacheLogo() {
+    final logoUrl = Provider.of<SettingsProvider>(context, listen: false)
+        .settings?.businessConfig.logoUrl;
+    if (logoUrl == null || logoUrl.isEmpty) {
+      if (!_isLogoLoaded) {
+        setState(() {
+          _isLogoLoaded = true;
+        });
+      }
+      return;
+    }
+
+    final imageProvider = NetworkImage(logoUrl);
+    precacheImage(imageProvider, context).then((_) {
+      if (mounted) {
+        setState(() {
+          _isLogoLoaded = true;
+        });
+      }
+    }).catchError((e) {
+      if (mounted) {
+        setState(() {
+          _isLogoLoaded = true;
+          _hasLogoError = true;
+        });
+      }
+    });
+  }
 
   Future<void> _saveInvoiceImage() async {
     try {
@@ -116,8 +153,15 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                 children: [
                   const Text('REVIEW INVOICE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
                   IconButton(
-                    icon: const Icon(Icons.download, color: Colors.pink),
-                    onPressed: _saveInvoiceImage,
+                    icon: Icon(
+                      Icons.download, 
+                      color: _isLogoLoaded ? Theme.of(context).colorScheme.primary : Colors.grey
+                    ),
+                    onPressed: _isLogoLoaded ? _saveInvoiceImage : () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please wait for the logo to finish loading...')),
+                      );
+                    },
                     tooltip: 'Save Invoice to Device',
                   ),
                 ],
@@ -140,6 +184,36 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                         Center(
                           child: Column(
                             children: [
+                              if (businessConfig.logoUrl.isNotEmpty && !_hasLogoError) ...[
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  margin: const EdgeInsets.only(bottom: 12.0),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.black12, width: 1),
+                                  ),
+                                  child: ClipOval(
+                                    child: Image.network(
+                                      businessConfig.logoUrl,
+                                      fit: BoxFit.cover,
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return const Center(
+                                          child: SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return const Icon(Icons.broken_image, color: Colors.grey, size: 24);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
                               Text(businessConfig.businessName.toUpperCase(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2)),
                               const SizedBox(height: 4),
                               Text(
@@ -220,7 +294,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                                  Text(formatCurrency(provider.finalTotal), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.pink)),
+                                  Text(formatCurrency(provider.finalTotal), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Theme.of(context).colorScheme.primary)),
                                 ],
                               ),
                             ],
@@ -304,7 +378,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.pink,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
@@ -333,7 +407,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
         builder: (context, provider, child) => AlertDialog(
           title: Row(
             children: [
-              Icon(isPremium ? Icons.camera_alt : Icons.lock_outline, color: Colors.pink),
+              Icon(isPremium ? Icons.camera_alt : Icons.lock_outline, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 10),
               Text(isPremium ? 'Capture Work?' : 'Premium Feature'),
             ],
@@ -377,7 +451,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                         titleExplanation: "Upgrade to Premium to upload work photos and start building your client photo portfolios!",
                       );
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.pink, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white),
                     child: const Text('📷 GO PREMIUM'),
                   ),
                 ]
@@ -399,7 +473,7 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                               }
                             }
                           },
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.pink, foregroundColor: Colors.white),
+                          style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white),
                           child: const Text('📷 TAKE PHOTO'),
                         ),
                       if (provider.uploadError != null)
