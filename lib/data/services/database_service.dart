@@ -378,6 +378,22 @@ class DatabaseService {
         .toList();
   }
 
+  Future<List<Expense>> getExpensesInRange({DateTime? startDate, DateTime? endDate}) async {
+    Query query = _expensesRef;
+    if (startDate != null) {
+      query = query.where('created_at', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+    }
+    if (endDate != null) {
+      query = query.where('created_at', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
+    }
+    final snapshot = await query.get();
+    final items = snapshot.docs
+        .map((doc) => Expense.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+        .toList();
+    items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return items;
+  }
+
   // --- Reports ---
 
   Future<List<Invoice>> getInvoicesSince(DateTime date) async {
@@ -389,6 +405,22 @@ class DatabaseService {
     return snapshot.docs
         .map((doc) => Invoice.fromMap(doc.id, doc.data() as Map<String, dynamic>))
         .toList();
+  }
+
+  Future<List<Invoice>> getInvoicesInRange({DateTime? startDate, DateTime? endDate}) async {
+    Query query = _invoicesRef;
+    if (startDate != null) {
+      query = query.where('created_at', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+    }
+    if (endDate != null) {
+      query = query.where('created_at', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
+    }
+    final snapshot = await query.get();
+    final items = snapshot.docs
+        .map((doc) => Invoice.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+        .toList();
+    items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return items;
   }
 
   Future<List<Invoice>> getCustomerInvoices(String customerId) async {
@@ -474,6 +506,22 @@ class DatabaseService {
           .map((doc) => Booking.fromMap(doc.id, doc.data() as Map<String, dynamic>))
           .toList();
     });
+  }
+
+  Future<List<Booking>> getBookingsInRange({DateTime? startDate, DateTime? endDate}) async {
+    Query query = _bookingsRef;
+    if (startDate != null) {
+      query = query.where('start_time', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+    }
+    if (endDate != null) {
+      query = query.where('start_time', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
+    }
+    final snapshot = await query.get();
+    final items = snapshot.docs
+        .map((doc) => Booking.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+        .toList();
+    items.sort((a, b) => a.startTime.compareTo(b.startTime));
+    return items;
   }
 
   Future<String> addBooking(Booking booking) async {

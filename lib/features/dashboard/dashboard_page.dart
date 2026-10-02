@@ -5,8 +5,12 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/dashboard_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../core/providers/subscription_provider.dart';
 import '../../data/models/app_settings_model.dart';
+import '../../data/services/database_service.dart';
+import '../subscription/paywall_bottom_sheet.dart';
 import 'widgets/daily_details_dialog.dart';
+import 'widgets/csv_export_dialog.dart';
 
 enum DashboardChartView {
   performance,
@@ -123,6 +127,8 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<DashboardProvider>(context);
     final settingsProvider = Provider.of<SettingsProvider>(context);
+    final subProvider = context.watch<SubscriptionProvider>();
+    final isPremium = subProvider.isPremium;
     final businessConfig = settingsProvider.settings?.businessConfig ?? BusinessConfig(businessName: 'My Salon', currencySymbol: '\$');
     
     String formatCurrency(num amount) {
@@ -165,11 +171,103 @@ class _DashboardPageState extends State<DashboardPage> {
 
                     // 4. Selected Chart View
                     _buildSelectedChartView(provider, formatCurrency),
+                    const SizedBox(height: 20),
+
+                    // 5. CSV Data Export Card
+                    _buildCsvExportCard(context, isPremium),
                     const SizedBox(height: 16),
                   ],
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildCsvExportCard(BuildContext context, bool isPremium) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.pink.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.pink.withOpacity(0.15)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.pink.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.table_chart_outlined, color: Colors.pink, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Export Data (CSV)',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Invoices, Customers, Expenses & Bookings',
+                  style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            onPressed: () {
+              if (!isPremium) {
+                PaywallBottomSheet.show(
+                  context,
+                  titleExplanation: "Unlock CSV Data Export & Business Analytics",
+                );
+              } else {
+                final dbService = Provider.of<DatabaseService>(context, listen: false);
+                CsvExportDialog.show(context, dbService);
+              }
+            },
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.download_rounded, size: 16),
+                if (!isPremium)
+                  Positioned(
+                    right: -6,
+                    top: -6,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.amber,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.lock_rounded,
+                        size: 9,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            label: const Text('Export', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.pink,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -585,7 +585,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete, size: 20, color: Colors.red),
-                          onPressed: () => provider.deleteService(index),
+                          onPressed: () => _confirmDeleteService(context, provider, service, index),
                         ),
                       ],
                     ),
@@ -596,6 +596,30 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDeleteService(BuildContext context, SettingsProvider provider, ServiceItem service, int index) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Service'),
+        content: Text('Are you sure you want to delete "${service.serviceName}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('DELETE', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      provider.deleteService(index);
+    }
   }
 
   void _showEditBusinessDialog(BuildContext context, SettingsProvider provider, BusinessConfig current) {
