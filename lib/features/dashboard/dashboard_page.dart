@@ -11,6 +11,7 @@ import '../../data/services/database_service.dart';
 import '../subscription/paywall_bottom_sheet.dart';
 import 'widgets/daily_details_dialog.dart';
 import 'widgets/csv_export_dialog.dart';
+import '../settings/settings_page.dart';
 
 enum DashboardChartView {
   performance,
@@ -143,7 +144,18 @@ class _DashboardPageState extends State<DashboardPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
             onPressed: () => provider.loadDashboardData(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
+              );
+            },
           ),
         ],
       ),

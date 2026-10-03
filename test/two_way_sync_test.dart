@@ -93,7 +93,7 @@ void main() {
 
     test('syncExternalCalendars - Google: Adds new event, updates existing, and deletes removed', () async {
       // 1. Stub Google Calendar API returning 1 new event and 1 existing event
-      final syncTime = DateTime(2026, 7, 29, 10, 0);
+      final syncTime = DateTime.now();
       final newEventTime = syncTime.add(const Duration(days: 2));
       final existingEventTime = syncTime.add(const Duration(days: 4));
 
@@ -184,7 +184,7 @@ void main() {
 
     test('syncExternalCalendars - Apple: Adds new event, updates existing, and deletes removed', () async {
       // 1. Stub Apple Calendar retrieveEvents returning 1 new event and 1 existing event
-      final syncTime = DateTime(2026, 7, 29, 10, 0);
+      final syncTime = DateTime.now();
       final newEventTime = syncTime.add(const Duration(days: 2));
       final existingEventTime = syncTime.add(const Duration(days: 4));
 

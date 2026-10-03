@@ -7,6 +7,8 @@ import '../models/expense_model.dart';
 import '../models/app_settings_model.dart';
 import '../models/system_config_model.dart';
 import '../models/booking_model.dart';
+import '../models/staff_model.dart';
+import '../models/customer_note_model.dart';
 
 
 class DatabaseService {
@@ -74,6 +76,13 @@ class DatabaseService {
   CollectionReference get _customersRef => userId == null 
       ? _db.collection('guests').doc('null').collection('customers') 
       : _db.collection('users').doc(userId).collection('customers');
+
+  CollectionReference _customerNotesRef(String customerId) =>
+      _customersRef.doc(customerId).collection('notes');
+
+  CollectionReference get _staffRef => userId == null 
+      ? _db.collection('guests').doc('null').collection('staff') 
+      : _db.collection('users').doc(userId).collection('staff');
 
   CollectionReference get _invoicesRef => userId == null 
       ? _db.collection('guests').doc('null').collection('invoices') 
@@ -177,8 +186,50 @@ class DatabaseService {
     for (var doc in invoicesSnapshot.docs) {
       batch.delete(doc.reference);
     }
+
+    // 3. Delete all notes for this customer
+    final notesSnapshot = await _customerNotesRef(customerId).get();
+    for (var doc in notesSnapshot.docs) {
+      batch.delete(doc.reference);
+    }
     
     await batch.commit();
+  }
+
+  // --- Customer Notes ---
+
+  Future<List<CustomerNote>> getCustomerNotes(String customerId) async {
+    final snapshot = await _customerNotesRef(customerId).get();
+    final notes = snapshot.docs
+        .map((doc) => CustomerNote.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+        .toList();
+    notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return notes;
+  }
+
+  Future<String> addCustomerNote(String customerId, String content) async {
+    await _ensureUserSynced();
+    final now = DateTime.now();
+    final note = CustomerNote(
+      id: '',
+      content: content,
+      createdAt: now,
+    );
+    final docRef = await _customerNotesRef(customerId).add(note.toMap());
+    return docRef.id;
+  }
+
+  Future<void> updateCustomerNote(String customerId, String noteId, String content) async {
+    await _ensureUserSynced();
+    await _customerNotesRef(customerId).doc(noteId).update({
+      'content': content,
+      'updated_at': Timestamp.fromDate(DateTime.now()),
+    });
+  }
+
+  Future<void> deleteCustomerNote(String customerId, String noteId) async {
+    await _ensureUserSynced();
+    await _customerNotesRef(customerId).doc(noteId).delete();
   }
 
   // --- Invoices ---
@@ -557,5 +608,49 @@ class DatabaseService {
         .collection('configs')
         .doc('calendar_settings')
         .set(data, SetOptions(merge: true));
+  }
+
+  // --- Staff Management ---
+
+  Future<List<Staff>> getStaffList() async {
+    final snapshot = await _staffRef.get();
+    final staff = snapshot.docs
+        .map((doc) => Staff.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+        .toList();
+    staff.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return staff;
+  }
+
+  Future<Staff?> getStaff(String staffId) async {
+    final doc = await _staffRef.doc(staffId).get();
+    if (!doc.exists || doc.data() == null) return null;
+    return Staff.fromMap(doc.id, doc.data() as Map<String, dynamic>);
+  }
+
+  Future<String> addStaff(Staff staff) async {
+    await _ensureUserSynced();
+    final docRef = await _staffRef.add(staff.toMap());
+    return docRef.id;
+  }
+
+  Future<void> updateStaff(Staff staff) async {
+    await _ensureUserSynced();
+    await _staffRef.doc(staff.id).update(staff.toMap());
+  }
+
+  Future<void> deleteStaff(String staffId) async {
+    await _ensureUserSynced();
+    await _staffRef.doc(staffId).delete();
+  }
+
+  Future<List<Invoice>> getStaffInvoices(String staffName) async {
+    final snapshot = await _invoicesRef
+        .where('staff_names', arrayContains: staffName)
+        .get();
+    final invoices = snapshot.docs
+        .map((doc) => Invoice.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+        .toList();
+    invoices.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return invoices;
   }
 }

@@ -13,13 +13,17 @@ void main() {
           id: 'inv_1',
           customerId: 'cust_1',
           customerName: 'Mary Jane, "VIP"',
+          staffNames: ['Bảo', 'Ngọc'],
+          tip: 5.0,
+          commissionPercent: 10.0,
+          notes: 'Customer requested French design, VIP seat',
           services: [
             ServiceItem(serviceName: 'Gel Manicure', price: 35.0),
             ServiceItem(serviceName: 'Nail Art', price: 15.0),
           ],
           subtotal: 50.0,
           discountPercent: 10.0,
-          finalTotal: 45.0,
+          finalTotal: 50.0,
           photoUrls: [],
           createdAt: DateTime(2026, 8, 24, 14, 30),
         ),
@@ -31,10 +35,19 @@ void main() {
       expect(csv.startsWith('\uFEFF'), isTrue);
 
       // Verify headers
-      expect(csv, contains('Invoice ID,Customer ID,Customer Name,Services,Subtotal,Discount %,Final Total,Created Date,Session Start,Session End'));
+      expect(csv, contains('Invoice ID,Customer ID,Customer Name,Staff,Services,Subtotal,Discount %,Tip,Commission %,Final Total,Notes,Created Date,Session Start,Session End'));
 
       // Verify escaping quotes in customer name
       expect(csv, contains('"Mary Jane, ""VIP"""'));
+
+      // Verify staff names joined
+      expect(csv, contains('Bảo; Ngọc'));
+
+      // Verify tip and commission
+      expect(csv, contains('5.00,10.0,50.00'));
+
+      // Verify notes escaped
+      expect(csv, contains('"Customer requested French design, VIP seat"'));
 
       // Verify formatted services
       expect(csv, contains('Gel Manicure (\$35.00); Nail Art (\$15.00)'));

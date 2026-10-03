@@ -8,13 +8,14 @@ import 'package:nms/core/providers/expense_provider.dart';
 import 'package:nms/core/providers/auth_provider.dart';
 import 'package:nms/core/providers/subscription_provider.dart';
 import 'package:nms/core/providers/booking_provider.dart';
+import 'package:nms/core/providers/staff_provider.dart';
 import 'package:nms/features/calendar/calendar_page.dart';
 import 'package:nms/core/widgets/custom_bottom_nav_bar.dart';
 import 'package:nms/features/invoice/invoice_page.dart';
 import 'package:nms/features/expenses/expenses_page.dart';
 import 'package:nms/features/dashboard/dashboard_page.dart';
 import 'package:nms/features/customers/customers_page.dart';
-import 'package:nms/features/settings/settings_page.dart';
+import 'package:nms/features/staff/staffs_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options_dev.dart' as dev;
 import 'firebase_options_prod.dart' as prod;
@@ -112,6 +113,10 @@ void main() async {
           create: (context) => BookingProvider(context.read<DatabaseService>()),
           update: (_, db, previous) => previous!..updateDbService(db),
         ),
+        ChangeNotifierProxyProvider<DatabaseService, StaffProvider>(
+          create: (context) => StaffProvider(context.read<DatabaseService>()),
+          update: (_, db, previous) => previous!..updateDbService(db),
+        ),
       ],
       child: const NMSApp(),
     ),
@@ -153,7 +158,7 @@ class MainNavigationPageState extends State<MainNavigationPage> {
     CalendarPage(),
     DashboardPage(),
     CustomersPage(),
-    SettingsPage(),
+    StaffsPage(),
   ];
 
   @override
@@ -166,7 +171,7 @@ class MainNavigationPageState extends State<MainNavigationPage> {
     setState(() {
       _selectedIndex = index;
     });
-    final List<String> screenNames = ['Invoice', 'Expenses', 'Calendar', 'Dashboard', 'Customers', 'Settings'];
+    final List<String> screenNames = ['Invoice', 'Expenses', 'Calendar', 'Dashboard', 'Customers', 'Staffs'];
     if (index >= 0 && index < screenNames.length) {
       FirebaseAnalytics.instance.logScreenView(screenName: screenNames[index]);
     }
@@ -175,6 +180,8 @@ class MainNavigationPageState extends State<MainNavigationPage> {
           .loadDashboardData();
     } else if (index == 4) {
       Provider.of<CustomerProvider>(context, listen: false).loadCustomers();
+    } else if (index == 5) {
+      Provider.of<StaffProvider>(context, listen: false).loadStaff();
     }
   }
 
@@ -232,9 +239,9 @@ class MainNavigationPageState extends State<MainNavigationPage> {
             label: 'Customers',
           ),
           CustomBottomNavBarItem(
-            icon: Icons.settings_outlined,
-            activeIcon: Icons.settings,
-            label: 'Settings',
+            icon: Icons.badge_outlined,
+            activeIcon: Icons.badge,
+            label: 'Staffs',
           ),
         ],
       ),

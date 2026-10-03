@@ -36,7 +36,7 @@ class CsvExportService {
 
     // Headers
     buffer.writeln(
-      'Invoice ID,Customer ID,Customer Name,Services,Subtotal,Discount %,Final Total,Created Date,Session Start,Session End'
+      'Invoice ID,Customer ID,Customer Name,Staff,Services,Subtotal,Discount %,Tip,Commission %,Final Total,Notes,Created Date,Session Start,Session End'
     );
 
     for (final inv in invoices) {
@@ -48,10 +48,14 @@ class CsvExportService {
         _escapeCsvValue(inv.id),
         _escapeCsvValue(inv.customerId),
         _escapeCsvValue(inv.customerName),
+        _escapeCsvValue(inv.staffNames.join('; ')),
         _escapeCsvValue(servicesSummary),
         inv.subtotal.toStringAsFixed(2),
         inv.discountPercent.toStringAsFixed(1),
+        inv.tip.toStringAsFixed(2),
+        inv.commissionPercent.toStringAsFixed(1),
         inv.finalTotal.toStringAsFixed(2),
+        _escapeCsvValue(inv.notes),
         _escapeCsvValue(_formatDateTime(inv.createdAt)),
         _escapeCsvValue(_formatDateTime(inv.sessionStart)),
         _escapeCsvValue(_formatDateTime(inv.sessionEnd)),

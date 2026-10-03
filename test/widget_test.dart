@@ -16,6 +16,7 @@ import 'package:nms/core/providers/expense_provider.dart';
 import 'package:nms/core/providers/invoice_provider.dart';
 import 'package:nms/core/providers/settings_provider.dart';
 import 'package:nms/core/providers/subscription_provider.dart';
+import 'package:nms/core/providers/staff_provider.dart';
 import 'package:nms/data/services/database_service.dart';
 import 'package:nms/data/services/migration_service.dart';
 import 'package:nms/main.dart';
@@ -59,6 +60,7 @@ void main() {
 
     final subscriptionProvider = SubscriptionProvider(dbService, auth: mockAuth);
     final customerProvider = CustomerProvider(dbService)..loadCustomers();
+    final staffProvider = StaffProvider(dbService)..loadStaff();
     final invoiceProvider = InvoiceProvider(dbService);
     final dashboardProvider = DashboardProvider(dbService);
     final settingsProvider = SettingsProvider(dbService)..loadSettings();
@@ -76,6 +78,7 @@ void main() {
           Provider<DatabaseService>.value(value: dbService),
           ChangeNotifierProvider<SubscriptionProvider>.value(value: subscriptionProvider),
           ChangeNotifierProvider<CustomerProvider>.value(value: customerProvider),
+          ChangeNotifierProvider<StaffProvider>.value(value: staffProvider),
           ChangeNotifierProvider<InvoiceProvider>.value(value: invoiceProvider),
           ChangeNotifierProvider<DashboardProvider>.value(value: dashboardProvider),
           ChangeNotifierProvider<SettingsProvider>.value(value: settingsProvider),
@@ -91,5 +94,15 @@ void main() {
     // Let any async loading finish and settle
     await tester.pump();
     await tester.pumpAndSettle();
+
+    // Verify Settings button exists on AppBar
+    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+    // Verify Staffs tab icon exists in bottom nav
+    expect(find.byIcon(Icons.badge_outlined), findsOneWidget);
+
+    // Tap on Staffs tab
+    await tester.tap(find.byIcon(Icons.badge_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('Staffs'), findsWidgets);
   });
 }

@@ -171,7 +171,10 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
             // The Capturable Area
             Flexible(
               child: SingleChildScrollView(
-                child: RepaintBoundary(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RepaintBoundary(
                   key: _globalKey,
                   child: Container(
                     color: Colors.white,
@@ -244,6 +247,20 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                               Text(provider.selectedCustomer!.phone, style: const TextStyle(color: Colors.grey, fontSize: 14)),
                           ],
                         ),
+                        if (provider.selectedStaffNames.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Text('STAFF: ', style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
+                              Expanded(
+                                child: Text(
+                                  provider.selectedStaffNames.join(', '),
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
                           child: Divider(thickness: 1, color: Colors.black12),
@@ -333,8 +350,10 @@ class _InvoiceSummaryDialogState extends State<InvoiceSummaryDialog> {
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
+          ),
+        ),
             
             // Footer Actions (Not in Image)
             Padding(

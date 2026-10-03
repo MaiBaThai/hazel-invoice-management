@@ -353,8 +353,11 @@ class SubscriptionSettingsPage extends StatelessWidget {
     String title = package.packageType == PackageType.monthly
         ? "Monthly Plan"
         : "Yearly Plan";
+    final savingsPercent = subProvider.annualSavingsPercent;
+    final saveTagText = savingsPercent != null ? "SAVE $savingsPercent%" : "SAVE ~40%";
+    final monthlyEquiv = isYearly ? subProvider.getMonthlyEquivalent(package) : null;
     String description = isYearly
-        ? "Yearly plan with unlimited invoices & photos"
+        ? "Only $monthlyEquiv/month, billed annually"
         : "Month-to-month access, cancel anytime";
 
     return Container(
@@ -382,22 +385,31 @@ class SubscriptionSettingsPage extends StatelessWidget {
                       ),
                     ),
                     if (isYearly) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1.5),
+                            horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFFFFB74D), Color(0xFFFFA726)],
+                            colors: [Color(0xFFFFB74D), Color(0xFFFF9800)],
                           ),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF9800).withOpacity(0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        child: const Text(
-                          "SAVE 45%",
-                          style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold),
+                        child: Text(
+                          saveTagText,
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.3,
+                          ),
                         ),
                       ),
                     ]

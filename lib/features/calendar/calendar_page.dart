@@ -9,6 +9,7 @@ import '../subscription/paywall_bottom_sheet.dart';
 import '../customers/customer_detail_page.dart';
 import 'booking_dialog.dart';
 import 'sync_settings_dialog.dart';
+import '../settings/settings_page.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -157,6 +158,7 @@ class _CalendarPageState extends State<CalendarPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.tune),
+            tooltip: 'Sync Settings',
             onPressed: () async {
               await showDialog(
                 context: context,
@@ -165,6 +167,16 @@ class _CalendarPageState extends State<CalendarPage> {
               if (context.mounted) {
                 context.read<BookingProvider>().syncExternalCalendars();
               }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
+              );
             },
           ),
         ],

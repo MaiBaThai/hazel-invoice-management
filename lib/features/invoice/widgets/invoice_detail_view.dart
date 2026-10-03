@@ -28,6 +28,9 @@ class InvoiceDetailView extends StatelessWidget {
       return businessConfig.isPrefix ? '${businessConfig.currencySymbol}$formatted' : '$formatted${businessConfig.currencySymbol}';
     }
 
+    final commissionBase = invoice.subtotal * (1 - invoice.discountPercent / 100);
+    final commissionAmount = commissionBase * (invoice.commissionPercent / 100);
+
     return Column(
       children: [
         // Drag Handle
@@ -89,6 +92,21 @@ class InvoiceDetailView extends StatelessWidget {
                         ] else ...[
                           Text(dateFormat.format(invoice.createdAt), style: const TextStyle(color: Colors.grey)),
                         ],
+                        if (invoice.staffNames.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(Icons.badge_outlined, size: 16, color: Colors.grey),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Staff: ${invoice.staffNames.join(', ')}',
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -112,18 +130,78 @@ class InvoiceDetailView extends StatelessWidget {
                       ],
                     ),
                   )),
+              const SizedBox(height: 12),
+              const Divider(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Subtotal', style: TextStyle(fontSize: 15, color: Colors.grey)),
+                  Text(formatCurrency(invoice.subtotal), style: const TextStyle(fontSize: 15, color: Colors.grey)),
+                ],
+              ),
               if (invoice.discountPercent > 0) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Discount', style: TextStyle(fontSize: 17, fontStyle: FontStyle.italic, color: Colors.green)),
-                    Text('-${invoice.discountPercent}%', style: const TextStyle(fontSize: 17, color: Colors.green, fontWeight: FontWeight.bold)),
+                    const Text('Discount', style: TextStyle(fontSize: 15, fontStyle: FontStyle.italic, color: Colors.green)),
+                    Text('-${invoice.discountPercent}%', style: const TextStyle(fontSize: 15, color: Colors.green, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ],
-              const SizedBox(height: 32),
+              if (invoice.tip > 0) ...[
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Tip', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.blueGrey)),
+                    Text('+${formatCurrency(invoice.tip)}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                  ],
+                ),
+              ],
+              if (invoice.commissionPercent > 0) ...[
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Staff Commission (${invoice.commissionPercent}%)', style: const TextStyle(fontSize: 15, color: Colors.orange)),
+                    Text(formatCurrency(commissionAmount), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.orange)),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 8),
+              const Divider(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Total Amount', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                  Text(
+                    formatCurrency(invoice.finalTotal),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                  ),
+                ],
+              ),
+              if (invoice.notes.isNotEmpty) ...[
+                const SizedBox(height: 32),
+                const Text('NOTES', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+                const Divider(),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: Text(
+                    invoice.notes,
+                    style: const TextStyle(fontSize: 14, height: 1.4, color: Colors.black87),
+                  ),
+                ),
+              ],
               if (invoice.photoUrls.isNotEmpty) ...[
+                const SizedBox(height: 32),
                 const Text('PHOTOS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
                 const Divider(),
                 const SizedBox(height: 12),

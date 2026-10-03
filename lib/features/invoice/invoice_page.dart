@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/invoice_provider.dart';
+import '../../core/providers/staff_provider.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import 'widgets/customer_search_dialog.dart';
@@ -8,6 +9,7 @@ import 'widgets/add_customer_dialog.dart';
 import 'widgets/invoice_summary_dialog.dart';
 import 'widgets/session_time_picker_dialog.dart';
 import '../../data/models/app_settings_model.dart';
+import '../settings/settings_page.dart';
 import 'package:intl/intl.dart';
 
 class InvoicePage extends StatefulWidget {
@@ -21,7 +23,22 @@ class _InvoicePageState extends State<InvoicePage> {
   final List<TextEditingController> _nameControllers = [];
   final List<TextEditingController> _priceControllers = [];
   final TextEditingController _discountController = TextEditingController();
+  final TextEditingController _commissionController = TextEditingController();
+  final TextEditingController _tipController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
   bool _showSessionTimeError = false;
+  String? _syncedEditingInvoiceId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final staffProvider = Provider.of<StaffProvider>(context, listen: false);
+      if (!staffProvider.hasLoadedOnce) {
+        staffProvider.loadStaff();
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -32,6 +49,9 @@ class _InvoicePageState extends State<InvoicePage> {
       c.dispose();
     }
     _discountController.dispose();
+    _commissionController.dispose();
+    _tipController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -61,6 +81,7 @@ class _InvoicePageState extends State<InvoicePage> {
     provider.reset();
     setState(() {
       _showSessionTimeError = false;
+      _syncedEditingInvoiceId = null;
       for (var c in _nameControllers) {
         c.dispose();
       }
@@ -70,6 +91,9 @@ class _InvoicePageState extends State<InvoicePage> {
       _nameControllers.clear();
       _priceControllers.clear();
       _discountController.clear();
+      _commissionController.clear();
+      _tipController.clear();
+      _notesController.clear();
     });
   }
 
@@ -77,11 +101,42 @@ class _InvoicePageState extends State<InvoicePage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<InvoiceProvider>(context);
 
+    // If an invoice was loaded for editing, force sync all form fields to match the invoice
+    if (provider.isEditing && provider.editingInvoiceId != _syncedEditingInvoiceId) {
+      _syncedEditingInvoiceId = provider.editingInvoiceId;
+      _discountController.text = provider.discountPercent > 0
+          ? (provider.discountPercent == provider.discountPercent.toInt()
+              ? provider.discountPercent.toInt().toString()
+              : provider.discountPercent.toString())
+          : '';
+      _commissionController.text = provider.commissionPercent > 0
+          ? (provider.commissionPercent == provider.commissionPercent.toInt()
+              ? provider.commissionPercent.toInt().toString()
+              : provider.commissionPercent.toString())
+          : '';
+      _tipController.text = provider.tip > 0
+          ? (provider.tip == provider.tip.toInt()
+              ? provider.tip.toInt().toString()
+              : provider.tip.toString())
+          : '';
+      _notesController.text = provider.notes;
+    } else if (!provider.isEditing && _syncedEditingInvoiceId != null) {
+      _syncedEditingInvoiceId = null;
+    }
+
     // Check if provider was reset from elsewhere (like Summary Dialog)
     if (provider.selectedCustomer == null &&
         provider.services.isEmpty &&
-        provider.discountPercent == 0) {
-      if (_nameControllers.isNotEmpty || _discountController.text.isNotEmpty) {
+        provider.discountPercent == 0 &&
+        provider.selectedStaffNames.isEmpty &&
+        provider.tip == 0 &&
+        provider.commissionPercent == 0 &&
+        provider.notes.isEmpty) {
+      if (_nameControllers.isNotEmpty ||
+          _discountController.text.isNotEmpty ||
+          _commissionController.text.isNotEmpty ||
+          _tipController.text.isNotEmpty ||
+          _notesController.text.isNotEmpty) {
         // Force clear local controllers if provider is empty
         for (var c in _nameControllers) {
           c.dispose();
@@ -92,7 +147,30 @@ class _InvoicePageState extends State<InvoicePage> {
         _nameControllers.clear();
         _priceControllers.clear();
         _discountController.clear();
+        _commissionController.clear();
+        _tipController.clear();
+        _notesController.clear();
+        _syncedEditingInvoiceId = null;
       }
+    }
+
+    if (_discountController.text.isEmpty && provider.discountPercent > 0) {
+      _discountController.text = provider.discountPercent == provider.discountPercent.toInt()
+          ? provider.discountPercent.toInt().toString()
+          : provider.discountPercent.toString();
+    }
+    if (_commissionController.text.isEmpty && provider.commissionPercent > 0) {
+      _commissionController.text = provider.commissionPercent == provider.commissionPercent.toInt()
+          ? provider.commissionPercent.toInt().toString()
+          : provider.commissionPercent.toString();
+    }
+    if (_tipController.text.isEmpty && provider.tip > 0) {
+      _tipController.text = provider.tip == provider.tip.toInt()
+          ? provider.tip.toInt().toString()
+          : provider.tip.toString();
+    }
+    if (_notesController.text.isEmpty && provider.notes.isNotEmpty) {
+      _notesController.text = provider.notes;
     }
 
     _syncWithProvider(provider);
@@ -126,7 +204,18 @@ class _InvoicePageState extends State<InvoicePage> {
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),
+              tooltip: 'Reset',
               onPressed: () => _handleReset(provider),
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: 'Settings',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsPage()),
+                );
+              },
             ),
           ],
         ),
@@ -191,6 +280,50 @@ class _InvoicePageState extends State<InvoicePage> {
                     );
                   },
                 ),
+              if (provider.isEditing)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_note, color: Colors.amber[900], size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Editing Invoice',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: Colors.amber[900]),
+                            ),
+                            Text(
+                              'All fields loaded. Make changes and review below.',
+                              style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _handleReset(provider),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text('Cancel Edit',
+                            style: TextStyle(fontSize: 12, color: Colors.red)),
+                      ),
+                    ],
+                  ),
+                ),
               const Text('Customer',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
@@ -201,6 +334,124 @@ class _InvoicePageState extends State<InvoicePage> {
                   setState(() {
                     _showSessionTimeError = false;
                   });
+                },
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Staff',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  if (provider.selectedStaffNames.isNotEmpty)
+                    Text(
+                      '${provider.selectedStaffNames.length} selected',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Consumer<StaffProvider>(
+                builder: (context, staffProvider, child) {
+                  final staffList = staffProvider.activeStaff;
+                  if (staffList.isEmpty) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.people_outline,
+                              size: 18, color: Colors.grey[400]),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'No staff found. Add staff in the Staff tab to select here.',
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey[500]),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: staffList.map((staff) {
+                      final isSelected =
+                          provider.selectedStaffNames.contains(staff.name);
+                      return FilterChip(
+                        label: Text(staff.name),
+                        selected: isSelected,
+                        onSelected: (_) {
+                          provider.toggleStaffName(staff.name,
+                              defaultCommission: staff.defaultCommissionPercent);
+                          if (provider.selectedStaffNames.isEmpty) {
+                            provider.setCommissionPercent(0.0);
+                            _commissionController.clear();
+                          } else if (provider.selectedStaffNames.length == 1) {
+                            final singleStaffName = provider.selectedStaffNames.first;
+                            final singleStaff = staffList.where((s) => s.name == singleStaffName).firstOrNull;
+                            final commission = singleStaff?.defaultCommissionPercent ?? 0.0;
+                            provider.setCommissionPercent(commission);
+                            if (commission == 0) {
+                              _commissionController.clear();
+                            } else {
+                              _commissionController.text =
+                                  commission == commission.toInt()
+                                      ? commission.toInt().toString()
+                                      : commission.toString();
+                            }
+                          } else {
+                            if (provider.commissionPercent == 0) {
+                              _commissionController.clear();
+                            } else {
+                              _commissionController.text =
+                                  provider.commissionPercent ==
+                                          provider.commissionPercent.toInt()
+                                      ? provider.commissionPercent
+                                          .toInt()
+                                          .toString()
+                                      : provider.commissionPercent.toString();
+                            }
+                          }
+                        },
+                        selectedColor: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.12),
+                        checkmarkColor:
+                            Theme.of(context).colorScheme.primary,
+                        labelStyle: TextStyle(
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey[800],
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 13,
+                        ),
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey[300]!,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
                 },
               ),
               const SizedBox(height: 24),
@@ -462,6 +713,127 @@ class _InvoicePageState extends State<InvoicePage> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Commission (%)',
+                                style: TextStyle(
+                                    color: Colors.grey[600], fontSize: 14)),
+                            if (provider.commissionPercent > 0)
+                              Text(
+                                'Est: ${formatCurrency(provider.estimatedCommissionAmount)}',
+                                style: TextStyle(
+                                    color: Colors.teal[700],
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500),
+                              ),
+                          ],
+                        ),
+                        SizedBox(
+                          width: 70,
+                          height: 36,
+                          child: TextField(
+                            controller: _commissionController,
+                            textAlign: TextAlign.center,
+                            decoration: InputDecoration(
+                              isDense: true,
+                              filled: true,
+                              fillColor: Colors.teal.withOpacity(0.04),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 8),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                    color: Colors.teal.withOpacity(0.3)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                    color: Colors.teal.withOpacity(0.3)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide:
+                                    const BorderSide(color: Colors.teal),
+                              ),
+                              hintText: '0',
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (val) => provider
+                                .setCommissionPercent(double.tryParse(val) ?? 0),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.teal,
+                                fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Tip',
+                                style: TextStyle(
+                                    color: Colors.grey[600], fontSize: 14)),
+                            Text('(Paid directly to staff)',
+                                style: TextStyle(
+                                    color: Colors.grey[400], fontSize: 11)),
+                          ],
+                        ),
+                        SizedBox(
+                          width: 90,
+                          height: 36,
+                          child: TextField(
+                            controller: _tipController,
+                            textAlign: TextAlign.right,
+                            decoration: InputDecoration(
+                              isDense: true,
+                              filled: true,
+                              fillColor: Colors.amber.withOpacity(0.05),
+                              prefixText: businessConfig.isPrefix
+                                  ? businessConfig.currencySymbol
+                                  : null,
+                              suffixText: !businessConfig.isPrefix
+                                  ? businessConfig.currencySymbol
+                                  : null,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 8),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                    color: Colors.amber.withOpacity(0.4)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                    color: Colors.amber.withOpacity(0.4)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide:
+                                    const BorderSide(color: Colors.amber),
+                              ),
+                              hintText: '0',
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (val) =>
+                                provider.setTip(double.tryParse(val) ?? 0),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.amber[900],
+                                fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
                     const Divider(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -478,8 +850,57 @@ class _InvoicePageState extends State<InvoicePage> {
                         ),
                       ],
                     ),
+                    if (provider.tip > 0) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('+ Staff Tip',
+                              style: TextStyle(
+                                  color: Colors.amber[900],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500)),
+                          Text(
+                            formatCurrency(provider.tip),
+                            style: TextStyle(
+                                color: Colors.amber[900],
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
+              ),
+              const SizedBox(height: 24),
+              const Text('Invoice Notes',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _notesController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Add notes about service, formulas, or preferences...',
+                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[200]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[200]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary),
+                  ),
+                  contentPadding: const EdgeInsets.all(12),
+                ),
+                onChanged: (val) => provider.setNotes(val),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -524,8 +945,9 @@ class _InvoicePageState extends State<InvoicePage> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: const Text('REVIEW INVOICE',
-                      style: TextStyle(
+                  child: Text(
+                      provider.isEditing ? 'REVIEW & UPDATE' : 'REVIEW INVOICE',
+                      style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2)),

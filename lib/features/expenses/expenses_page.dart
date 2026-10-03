@@ -5,6 +5,7 @@ import 'widgets/expense_summary_dialog.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../data/models/app_settings_model.dart';
+import '../settings/settings_page.dart';
 
 class ExpensesPage extends StatefulWidget {
   const ExpensesPage({super.key});
@@ -225,10 +226,21 @@ class _ExpensesPageState extends State<ExpensesPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Reset',
             onPressed: () {
               provider.reset();
               _noteController.clear();
               setState(() {});
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
+              );
             },
           ),
         ],

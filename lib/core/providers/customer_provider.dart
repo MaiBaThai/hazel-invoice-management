@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import '../../data/models/customer_model.dart';
+import '../../data/models/customer_note_model.dart';
 import '../../data/models/invoice_model.dart';
 import '../../data/services/database_service.dart';
 import 'subscription_provider.dart';
@@ -25,6 +26,7 @@ class CustomerProvider extends ChangeNotifier {
     _searchResults = [];
     _selectedCustomer = null;
     _customerInvoices = [];
+    _customerNotes = [];
     _hasLoadedOnce = false;
     _hasError = false;
     
@@ -50,6 +52,7 @@ class CustomerProvider extends ChangeNotifier {
 
   Customer? _selectedCustomer;
   List<Invoice> _customerInvoices = [];
+  List<CustomerNote> _customerNotes = [];
   bool _isLoadingDetails = false;
   bool _isUploadingPhoto = false;
   String? _uploadError;
@@ -63,6 +66,7 @@ class CustomerProvider extends ChangeNotifier {
   bool get hasError => _hasError;
   Customer? get selectedCustomer => _selectedCustomer;
   List<Invoice> get customerInvoices => _customerInvoices;
+  List<CustomerNote> get customerNotes => _customerNotes;
   bool get isLoadingDetails => _isLoadingDetails;
   bool get isUploadingPhoto => _isUploadingPhoto;
   String? get uploadError => _uploadError;
@@ -144,6 +148,7 @@ class CustomerProvider extends ChangeNotifier {
       _selectedCustomer = await _dbService.getCustomer(customerId);
       if (_selectedCustomer != null) {
         _customerInvoices = await _dbService.getCustomerInvoices(customerId);
+        _customerNotes = await _dbService.getCustomerNotes(customerId);
       }
     } catch (e) {
       debugPrint('Error loading customer details: $e');
@@ -316,6 +321,54 @@ class CustomerProvider extends ChangeNotifier {
       await loadCustomerDetails(customerId);
     } catch (e) {
       debugPrint('Error deleting photo: $e');
+      rethrow;
+    }
+  }
+
+  // --- Customer Notes Logic ---
+
+  Future<void> addCustomerNote(String customerId, String content) async {
+    try {
+      final now = DateTime.now();
+      final id = await _dbService.addCustomerNote(customerId, content.trim());
+      final note = CustomerNote(
+        id: id,
+        content: content.trim(),
+        createdAt: now,
+      );
+      _customerNotes.insert(0, note);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error adding customer note: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateCustomerNote(String customerId, String noteId, String content) async {
+    try {
+      final index = _customerNotes.indexWhere((n) => n.id == noteId);
+      if (index != -1) {
+        await _dbService.updateCustomerNote(customerId, noteId, content.trim());
+        final updated = _customerNotes[index].copyWith(
+          content: content.trim(),
+          updatedAt: DateTime.now(),
+        );
+        _customerNotes[index] = updated;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error updating customer note: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteCustomerNote(String customerId, String noteId) async {
+    try {
+      await _dbService.deleteCustomerNote(customerId, noteId);
+      _customerNotes.removeWhere((n) => n.id == noteId);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error deleting customer note: $e');
       rethrow;
     }
   }

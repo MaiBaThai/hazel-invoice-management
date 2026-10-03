@@ -64,6 +64,62 @@ class SubscriptionProvider extends ChangeNotifier {
       _offerings?.current?.availablePackages ?? 
       [];
 
+  /// Calculate savings percentage dynamically from active packages
+  int? get annualSavingsPercent {
+    final packages = activePackages;
+    Package? monthly;
+    Package? annual;
+    for (final p in packages) {
+      if (p.packageType == PackageType.monthly) monthly = p;
+      if (p.packageType == PackageType.annual) annual = p;
+    }
+    if (monthly == null || annual == null) return null;
+    return calculateSavingsPercent(monthly.storeProduct.price, annual.storeProduct.price);
+  }
+
+  /// Pure helper to calculate discount percentage between monthly and annual prices
+  static int? calculateSavingsPercent(double monthlyPrice, double annualPrice) {
+    final double monthlyAnnualized = monthlyPrice * 12.0;
+    if (monthlyAnnualized <= 0 || annualPrice >= monthlyAnnualized) return null;
+    final double discount = (monthlyAnnualized - annualPrice) / monthlyAnnualized;
+    return (discount * 100).round();
+  }
+
+  /// Calculates the equivalent monthly cost for the annual package (e.g. "$5.83" or "167,000đ")
+  String getMonthlyEquivalent(Package annualPackage) {
+    final product = annualPackage.storeProduct;
+    final double monthlyPrice = product.price / 12.0;
+
+    // Handle Vietnamese Dong (VND)
+    if (product.priceString.contains("đ") ||
+        product.priceString.toLowerCase().contains("vnd")) {
+      final int roundedVnd = (monthlyPrice / 1000).round() * 1000;
+      final int displayVal = roundedVnd > 0 ? roundedVnd : monthlyPrice.round();
+      return "${formatVnd(displayVal)}đ";
+    }
+
+    // Handle Dollar ($)
+    if (product.priceString.contains("\$")) {
+      return "\$${monthlyPrice.toStringAsFixed(2)}";
+    }
+
+    // Default with currency symbol/code if available
+    return "${product.currencyCode} ${monthlyPrice.toStringAsFixed(2)}";
+  }
+
+  /// Helper to format integers with thousands comma separator
+  static String formatVnd(int amount) {
+    final String str = amount.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && (str.length - i) % 3 == 0) {
+        buffer.write(',');
+      }
+      buffer.write(str[i]);
+    }
+    return buffer.toString();
+  }
+
   // --- Initializers ---
 
   void _initAuthListener() {

@@ -33,6 +33,10 @@ class Invoice {
   final DateTime createdAt;
   final DateTime? sessionStart;
   final DateTime? sessionEnd;
+  final double tip;
+  final double commissionPercent;
+  final List<String> staffNames;
+  final String notes;
 
   Invoice({
     required this.id,
@@ -46,6 +50,10 @@ class Invoice {
     required this.createdAt,
     this.sessionStart,
     this.sessionEnd,
+    this.tip = 0.0,
+    this.commissionPercent = 0.0,
+    this.staffNames = const [],
+    this.notes = '',
   });
 
   factory Invoice.fromMap(String id, Map<String, dynamic> map) {
@@ -63,6 +71,10 @@ class Invoice {
       createdAt: (map['created_at'] as Timestamp).toDate(),
       sessionStart: map['session_start'] != null ? (map['session_start'] as Timestamp).toDate() : null,
       sessionEnd: map['session_end'] != null ? (map['session_end'] as Timestamp).toDate() : null,
+      tip: (map['tip'] ?? 0.0).toDouble(),
+      commissionPercent: (map['commission_percent'] ?? 0.0).toDouble(),
+      staffNames: List<String>.from(map['staff_names'] ?? (map['staff_name'] != null ? [map['staff_name']] : [])),
+      notes: map['notes'] ?? map['note'] ?? '',
     );
   }
 
@@ -78,6 +90,46 @@ class Invoice {
       'created_at': Timestamp.fromDate(createdAt),
       'session_start': sessionStart != null ? Timestamp.fromDate(sessionStart!) : null,
       'session_end': sessionEnd != null ? Timestamp.fromDate(sessionEnd!) : null,
+      'tip': tip,
+      'commission_percent': commissionPercent,
+      'staff_names': staffNames,
+      'notes': notes,
     };
+  }
+
+  Invoice copyWith({
+    String? id,
+    String? customerId,
+    String? customerName,
+    List<ServiceItem>? services,
+    double? subtotal,
+    double? discountPercent,
+    double? finalTotal,
+    List<String>? photoUrls,
+    DateTime? createdAt,
+    DateTime? sessionStart,
+    DateTime? sessionEnd,
+    double? tip,
+    double? commissionPercent,
+    List<String>? staffNames,
+    String? notes,
+  }) {
+    return Invoice(
+      id: id ?? this.id,
+      customerId: customerId ?? this.customerId,
+      customerName: customerName ?? this.customerName,
+      services: services ?? this.services,
+      subtotal: subtotal ?? this.subtotal,
+      discountPercent: discountPercent ?? this.discountPercent,
+      finalTotal: finalTotal ?? this.finalTotal,
+      photoUrls: photoUrls ?? this.photoUrls,
+      createdAt: createdAt ?? this.createdAt,
+      sessionStart: sessionStart ?? this.sessionStart,
+      sessionEnd: sessionEnd ?? this.sessionEnd,
+      tip: tip ?? this.tip,
+      commissionPercent: commissionPercent ?? this.commissionPercent,
+      staffNames: staffNames ?? this.staffNames,
+      notes: notes ?? this.notes,
+    );
   }
 }

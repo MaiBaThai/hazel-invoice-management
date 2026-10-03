@@ -208,7 +208,7 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                       ),
                     )
                   else
-                    ...packages.map((package) => _buildPackageCard(package)),
+                    ...packages.map((package) => _buildPackageCard(package, subProvider)),
 
                   const SizedBox(height: 16),
 
@@ -450,7 +450,7 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
     );
   }
 
-  Widget _buildPackageCard(Package package) {
+  Widget _buildPackageCard(Package package, SubscriptionProvider subProvider) {
     final isSelected = _selectedPackage == package;
     final isYearly = package.packageType == PackageType.annual;
 
@@ -461,6 +461,9 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
     } else if (package.packageType == PackageType.annual) {
       displayName = "Premium Yearly";
     }
+
+    final savingsPercent = subProvider.annualSavingsPercent;
+    final saveTagText = savingsPercent != null ? "SAVE $savingsPercent%" : "SAVE ~40%";
 
     return GestureDetector(
       onTap: () {
@@ -524,22 +527,30 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                         ),
                       ),
                       if (isYearly) ...[
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 1.5),
+                              horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [Color(0xFFFFB74D), Color(0xFFFFA726)],
+                              colors: [Color(0xFFFFB74D), Color(0xFFFF9800)],
                             ),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFF9800).withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          child: const Text(
-                            "SAVE 45%",
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 8,
+                          child: Text(
+                            saveTagText,
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontSize: 10,
                               fontWeight: FontWeight.w900,
+                              letterSpacing: 0.3,
                             ),
                           ),
                         ),
@@ -549,7 +560,7 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                   const SizedBox(height: 3),
                   Text(
                     isYearly
-                        ? "Only $pricePerMonth/month, billed annually"
+                        ? "Only ${subProvider.getMonthlyEquivalent(package)}/month, billed annually"
                         : "Billed monthly, cancel anytime",
                     style: TextStyle(
                       color: isSelected ? Colors.white70 : Colors.white38,
@@ -571,38 +582,6 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
         ),
       ),
     );
-  }
-
-  String get pricePerMonth {
-    if (_selectedPackage == null) return "";
-    final yearlyProduct = _selectedPackage!.storeProduct;
-    final double monthlyPrice = yearlyProduct.price / 12.0;
-    // Format to 2 decimal places with currency symbol
-    String symbol = "";
-    if (yearlyProduct.priceString.contains("\$")) {
-      symbol = "\$";
-      return "$symbol${monthlyPrice.toStringAsFixed(2)}";
-    }
-    // Handle Vietnamese currency (VND)
-    if (yearlyProduct.priceString.contains("đ") ||
-        yearlyProduct.priceString.toLowerCase().contains("vnd")) {
-      final int monthlyInt = (yearlyProduct.price / 12.0).round();
-      return "${_formatVnd(monthlyInt)}đ";
-    }
-    return monthlyPrice.toStringAsFixed(2);
-  }
-
-  String _formatVnd(int amount) {
-    // Simple thousands separator format
-    final String str = amount.toString();
-    final buffer = StringBuffer();
-    for (int i = 0; i < str.length; i++) {
-      if (i > 0 && (str.length - i) % 3 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(str[i]);
-    }
-    return buffer.toString();
   }
 
   Future<void> _launchUrl(String urlString) async {

@@ -33,6 +33,10 @@ class InvoiceProvider extends ChangeNotifier {
   Customer? _selectedCustomer;
   List<ServiceItem> _services = [];
   double _discountPercent = 0;
+  List<String> _selectedStaffNames = [];
+  double _tip = 0.0;
+  double _commissionPercent = 0.0;
+  String _notes = '';
   bool _isSaving = false;
   int _resetCounter = 0; // Used to force UI refresh
 
@@ -50,6 +54,10 @@ class InvoiceProvider extends ChangeNotifier {
   Customer? get selectedCustomer => _selectedCustomer;
   List<ServiceItem> get services => _services;
   double get discountPercent => _discountPercent;
+  List<String> get selectedStaffNames => _selectedStaffNames;
+  double get tip => _tip;
+  double get commissionPercent => _commissionPercent;
+  String get notes => _notes;
   bool get isSaving => _isSaving;
   bool get hasLoadedCustomers => _customerProvider?.allCustomers.isNotEmpty ?? false;
   int get resetCounter => _resetCounter;
@@ -58,6 +66,9 @@ class InvoiceProvider extends ChangeNotifier {
   bool get isSearching => _isSearching;
   DateTime? get sessionStart => _sessionStart;
   DateTime? get sessionEnd => _sessionEnd;
+
+  double get estimatedCommissionAmount =>
+      (subtotal * (1 - _discountPercent / 100)) * (_commissionPercent / 100);
 
   // Improved helper to remove Vietnamese diacritics without corrupting the string
   String _normalizeAndRemoveDiacritics(String str) {
@@ -214,6 +225,45 @@ class InvoiceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  String? get editingInvoiceId => _editingInvoiceId;
+
+  void toggleStaffName(String name, {double? defaultCommission}) {
+    if (_selectedStaffNames.contains(name)) {
+      _selectedStaffNames.remove(name);
+      if (_selectedStaffNames.isEmpty) {
+        _commissionPercent = 0.0;
+      }
+    } else {
+      _selectedStaffNames.add(name);
+      if (_selectedStaffNames.length == 1 &&
+          defaultCommission != null &&
+          defaultCommission > 0) {
+        _commissionPercent = defaultCommission;
+      }
+    }
+    notifyListeners();
+  }
+
+  void setStaffNames(List<String> names) {
+    _selectedStaffNames = List.from(names);
+    notifyListeners();
+  }
+
+  void setTip(double amount) {
+    _tip = amount;
+    notifyListeners();
+  }
+
+  void setCommissionPercent(double percent) {
+    _commissionPercent = percent;
+    notifyListeners();
+  }
+
+  void setNotes(String notes) {
+    _notes = notes;
+    notifyListeners();
+  }
+
   void loadInvoiceForEditing(Invoice invoice, Customer customer) {
     _editingInvoiceId = invoice.id;
     _originalTotal = invoice.finalTotal;
@@ -225,6 +275,10 @@ class InvoiceProvider extends ChangeNotifier {
     _discountPercent = invoice.discountPercent;
     _sessionStart = invoice.sessionStart;
     _sessionEnd = invoice.sessionEnd;
+    _selectedStaffNames = List.from(invoice.staffNames);
+    _tip = invoice.tip;
+    _commissionPercent = invoice.commissionPercent;
+    _notes = invoice.notes;
     
     notifyListeners();
   }
@@ -290,6 +344,10 @@ class InvoiceProvider extends ChangeNotifier {
         createdAt: _editingCreatedAt ?? DateTime.now(),
         sessionStart: _sessionStart,
         sessionEnd: _sessionEnd,
+        tip: _tip,
+        commissionPercent: _commissionPercent,
+        staffNames: _selectedStaffNames,
+        notes: _notes,
       );
 
       String? invoiceId;
@@ -350,6 +408,10 @@ class InvoiceProvider extends ChangeNotifier {
     _selectedCustomer = null;
     _services = [];
     _discountPercent = 0;
+    _selectedStaffNames = [];
+    _tip = 0.0;
+    _commissionPercent = 0.0;
+    _notes = '';
     _searchResults = [];
     _editingInvoiceId = null;
     _originalTotal = 0;

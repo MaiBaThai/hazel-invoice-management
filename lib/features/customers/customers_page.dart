@@ -5,6 +5,7 @@ import '../../core/providers/customer_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../data/models/app_settings_model.dart';
 import 'customer_detail_page.dart';
+import '../settings/settings_page.dart';
 
 class CustomersPage extends StatefulWidget {
   const CustomersPage({super.key});
@@ -44,6 +45,18 @@ class _CustomersPageState extends State<CustomersPage> {
       appBar: AppBar(
         title: const Text('Customers', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
